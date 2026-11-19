@@ -121,7 +121,7 @@ svg.turkey.loud{--gait:.26s}
 .loud.face-r .tk-head{transform:rotate(12deg)}
 .loud.face-l .tk-head{transform:rotate(-12deg)}
 .head{transition:fill .3s}
-.loud .head{fill:#FFE1DC}
+.loud .head{fill:#FFE6DA}
 .lid{opacity:0;transition:opacity .2s}
 .calm .lid{opacity:1}
 .brow{opacity:0;transition:opacity .2s}
@@ -131,7 +131,20 @@ svg.turkey.loud{--gait:.26s}
 .face-l .pupil{transform:translateX(-3px)}
 .loud .pupil{r:2}
 .wattle{transform-box:view-box;transform-origin:207px 180px}
-.loud .wattle{animation:wag .2s ease-in-out infinite alternate}
+.loud .wattle{animation:none}
+.wattle,.m-warn,.m-loud{transition:opacity .2s}
+.m-warn,.m-loud{opacity:0}
+.eyes-happy{opacity:0;transition:opacity .2s}
+svg.turkey.calm .eyes-happy{opacity:1}
+svg.turkey.calm .eye,svg.turkey.calm .pupil,svg.turkey.calm .lid{opacity:0}
+.warn .wattle,.loud .wattle{opacity:0}
+.warn .m-warn,.loud .m-loud{opacity:1}
+.flame,.sflame{transform-box:fill-box;transform-origin:50% 100%;animation:flick 1.6s ease-in-out infinite}
+.warn .flame{animation-duration:.55s}
+.loud .flame{animation:sputter .2s steps(3) infinite}
+@keyframes flick{0%,100%{transform:scale(1,1) rotate(0)}30%{transform:scale(.95,1.06) rotate(-2.5deg)}65%{transform:scale(1.04,.96) rotate(2deg)}}
+@keyframes sputter{0%{transform:scale(.78,1.3) rotate(-16deg)}50%{transform:scale(1.2,.7) rotate(14deg)}100%{transform:scale(.9,1.12) rotate(-8deg)}}
+@media (prefers-reduced-motion:reduce){.flame,.sflame{animation:none!important}}
 .steam{opacity:0;transition:opacity .2s}
 .loud .steam{opacity:1}
 .steam circle{transform-box:fill-box;transform-origin:center;animation:steam .8s ease-out infinite}
@@ -376,45 +389,62 @@ input[type=range]{accent-color:var(--gold);width:100%}
       </div>
     </div>
     <div class="turkey-wrap">
-      <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="A peace dove; hands of many colors join behind it as the class stays quiet">
+      <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="A friendly candle; hands of many colors join behind it, each holding a light, as the class stays quiet">
+        <defs>
+          <radialGradient id="glowG">
+            <stop offset="0" stop-color="#FFD873" stop-opacity=".9"/>
+            <stop offset=".5" stop-color="#FFC94D" stop-opacity=".35"/>
+            <stop offset="1" stop-color="#FFC94D" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="flameG" cx=".5" cy=".72" r=".65">
+            <stop offset="0" stop-color="#FFF8D2"/>
+            <stop offset=".5" stop-color="#FFC93C"/>
+            <stop offset="1" stop-color="#F2861E"/>
+          </radialGradient>
+        </defs>
+        <!-- warm glow that grows as hands join -->
+        <circle id="glow" cx="200" cy="140" r="240" fill="url(#glowG)" opacity=".12"/>
         <g class="tk-all">
         <g id="tail"></g>
         <g class="tk-body">
-          <g stroke="#E08A2E" stroke-width="7" stroke-linecap="round" fill="none">
-            <g class="leg leg-l"><path d="M182 304 L178 330 M178 330 l-12 6 M178 330 l2 8 M178 330 l12 4"/></g>
-            <g class="leg leg-r"><path d="M218 304 L222 330 M222 330 l12 6 M222 330 l-2 8 M222 330 l-12 4"/></g>
-          </g>
-          <path d="M168 300 L150 330 L178 318 L200 334 L222 318 L250 330 L232 300 Z" fill="#EEF2F8" stroke="#2A2A3A" stroke-width="4" stroke-linejoin="round"/>
-          <ellipse cx="200" cy="252" rx="80" ry="66" fill="#FFFFFF" stroke="#2A2A3A" stroke-width="5"/>
-          <ellipse cx="200" cy="268" rx="50" ry="36" fill="#F1F4FA"/>
           <g stroke="#2A2A3A" stroke-width="4" stroke-linejoin="round">
-            <path d="M150 210 C118 222 108 262 120 296 C130 284 140 282 146 290 C150 276 160 272 168 278 C168 250 166 226 150 210 Z" fill="#F4F6FA"/>
-            <path d="M250 210 C282 222 292 262 280 296 C270 284 260 282 254 290 C250 276 240 272 232 278 C232 250 234 226 250 210 Z" fill="#F4F6FA"/>
-            <path d="M132 252 q10 4 18 0 M128 270 q10 4 18 0 M268 252 q-10 4 -18 0 M272 270 q-10 4 -18 0" fill="none" stroke="#B9C3D3" stroke-width="2.5"/>
+            <g class="leg leg-l"><path d="M170 318 L163 337 H188 L186 318 Z" fill="#C9963A"/></g>
+            <g class="leg leg-r"><path d="M230 318 L237 337 H212 L214 318 Z" fill="#C9963A"/></g>
           </g>
+          <!-- brass candle holder -->
+          <circle cx="284" cy="306" r="13" fill="none" stroke="#2A2A3A" stroke-width="10"/>
+          <circle cx="284" cy="306" r="13" fill="none" stroke="#E0B04F" stroke-width="5"/>
+          <ellipse cx="200" cy="318" rx="76" ry="15" fill="#E0B04F" stroke="#2A2A3A" stroke-width="5"/>
+          <path d="M166 318 V300 Q200 291 234 300 V318 Q200 326 166 318 Z" fill="#E7BC5E" stroke="#2A2A3A" stroke-width="4" stroke-linejoin="round"/>
+          <!-- little wax arms -->
+          <path d="M162 236 Q140 244 134 266 M238 236 Q260 244 266 266" fill="none" stroke="#2A2A3A" stroke-width="12" stroke-linecap="round"/>
+          <path d="M162 236 Q140 244 134 266 M238 236 Q260 244 266 266" fill="none" stroke="#FFF4DA" stroke-width="7" stroke-linecap="round"/>
+          <!-- candle -->
+          <rect class="head" x="160" y="124" width="80" height="182" rx="12" fill="#FFF4DA" stroke="#2A2A3A" stroke-width="5"/>
+          <rect x="220" y="150" width="10" height="146" rx="5" fill="#F2E1B8"/>
+          <path d="M160 140 Q160 124 172 124 H228 Q240 124 240 140 V152 Q235 162 231 152 V142 Q224 170 216 146 Q208 140 202 152 Q194 176 187 147 Q180 140 174 158 Q167 168 160 152 Z" fill="#FFFBEF" stroke="#2A2A3A" stroke-width="3" stroke-linejoin="round"/>
           <g class="tk-head">
-            <g class="steam" fill="#FFFFFF" stroke="#2A2A3A" stroke-width="2">
-              <circle cx="160" cy="124" r="7"/>
-              <circle cx="240" cy="124" r="7"/>
+            <g class="steam" fill="#D9DDE3" stroke="#2A2A3A" stroke-width="2">
+              <circle cx="182" cy="34" r="8"/>
+              <circle cx="220" cy="30" r="8"/>
             </g>
-            <path d="M192 134 q4 -14 10 -2 q6 -12 8 4" fill="#FFFFFF" stroke="#2A2A3A" stroke-width="3" stroke-linejoin="round"/>
-            <circle class="head" cx="200" cy="168" r="38" fill="#FFFFFF" stroke="#2A2A3A" stroke-width="5"/>
-            <circle cx="176" cy="180" r="7" fill="#F4B7B7" opacity=".7"/>
-            <circle cx="224" cy="180" r="7" fill="#F4B7B7" opacity=".7"/>
-            <circle cx="186" cy="160" r="9" fill="#fff" stroke="#2A2A3A" stroke-width="2.5"/>
-            <circle cx="214" cy="160" r="9" fill="#fff" stroke="#2A2A3A" stroke-width="2.5"/>
-            <circle class="pupil" cx="187" cy="161" r="4.5" fill="#2A2A3A"/>
-            <circle class="pupil" cx="213" cy="161" r="4.5" fill="#2A2A3A"/>
-            <path class="lid" d="M176 161 a10 10 0 0 1 20 0 Z M204 161 a10 10 0 0 1 20 0 Z" fill="#FFFFFF" stroke="#2A2A3A" stroke-width="2.5" stroke-linejoin="round"/>
-            <path class="brow" d="M176 147 l17 -5 M224 147 l-17 -5" stroke="#2A2A3A" stroke-width="4" stroke-linecap="round"/>
-            <g class="wattle" stroke="#2A2A3A" stroke-linejoin="round">
-              <path d="M206 181 Q226 188 248 176" fill="none" stroke="#5E7A3A" stroke-width="3.5" stroke-linecap="round"/>
-              <ellipse cx="220" cy="180" rx="9" ry="4.5" fill="#8DB05A" stroke-width="2" transform="rotate(-30 220 180)"/>
-              <ellipse cx="232" cy="188" rx="9" ry="4.5" fill="#8DB05A" stroke-width="2" transform="rotate(25 232 188)"/>
-              <ellipse cx="242" cy="174" rx="9" ry="4.5" fill="#8DB05A" stroke-width="2" transform="rotate(-40 242 174)"/>
-              <circle cx="236" cy="181" r="3.5" fill="#4E6B2E" stroke-width="1.5"/>
+            <path d="M200 125 V104" stroke="#2A2A3A" stroke-width="4" stroke-linecap="round"/>
+            <g class="flame">
+              <path d="M200 38 C215 60 228 80 221 99 C216 112 207 116 200 116 C193 116 184 112 179 99 C172 80 185 60 200 38 Z" fill="url(#flameG)" stroke="#D9701A" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M200 70 C207 82 212 92 209 101 C207 108 203 110 200 110 C197 110 193 108 191 101 C188 92 193 82 200 70 Z" fill="#FFF8D2"/>
             </g>
-            <path d="M189 174 Q200 169 211 174 L200 190 Z" fill="#F2A93B" stroke="#2A2A3A" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="177" cy="206" r="7" fill="#F4B7B7" opacity=".7"/>
+            <circle cx="223" cy="206" r="7" fill="#F4B7B7" opacity=".7"/>
+            <circle class="eye" cx="186" cy="186" r="9" fill="#fff" stroke="#2A2A3A" stroke-width="2.5"/>
+            <circle class="eye" cx="214" cy="186" r="9" fill="#fff" stroke="#2A2A3A" stroke-width="2.5"/>
+            <circle class="pupil" cx="187" cy="187" r="4.5" fill="#2A2A3A"/>
+            <circle class="pupil" cx="213" cy="187" r="4.5" fill="#2A2A3A"/>
+            <path class="lid" d="M176 187 a10 10 0 0 1 20 0 Z M204 187 a10 10 0 0 1 20 0 Z" fill="#FFF4DA" stroke="#2A2A3A" stroke-width="2.5" stroke-linejoin="round"/>
+            <path class="eyes-happy" d="M177 189 q9 -11 18 0 M205 189 q9 -11 18 0" fill="none" stroke="#2A2A3A" stroke-width="4.5" stroke-linecap="round"/>
+            <path class="brow" d="M176 168 l17 6 M224 168 l-17 6" stroke="#2A2A3A" stroke-width="4" stroke-linecap="round"/>
+            <path class="wattle" d="M187 207 Q200 220 213 207" fill="none" stroke="#2A2A3A" stroke-width="3.5" stroke-linecap="round"/>
+            <path class="m-warn" d="M191 211 H209" stroke="#2A2A3A" stroke-width="3.5" stroke-linecap="round"/>
+            <ellipse class="m-loud" cx="200" cy="212" rx="6" ry="8" fill="#8E2A2A" stroke="#2A2A3A" stroke-width="3"/>
           </g>
         </g>
         </g>
@@ -474,7 +504,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
   // A warm, varied range of skin tones, light to deep
   const COLORS = ["#F6D7BF","#8D5A3B","#E8B894","#5C3A26","#D7A178","#3F2618","#C68A5E","#A86F48","#EBC6A6","#73492F"];
   const RIBBONS = COLORS;
-  // An open hand, centered on 0,0, fingers pointing out from the dove
+  // An open hand holding up a small lit candle, centered on 0,0
   const presentSvg = c =>
     `<g stroke="#2A2A3A" stroke-width="3" stroke-linejoin="round" fill="${c}">` +
     `<rect x="-6.5" y="-30" width="13" height="34" rx="6.5" transform="translate(-16 26) rotate(-42)"/>` +
@@ -484,6 +514,12 @@ input[type=range]{accent-color:var(--gold);width:100%}
     `<rect x="15" y="-36" width="10" height="44" rx="5"/>` +
     `<rect x="-22" y="-4" width="47" height="46" rx="16"/>` +
     `<path d="M2 18 c-6 -7 -15 -1 -8 7 l8 7 l8 -7 c7 -8 -2 -14 -8 -7 z" fill="#FFFFFF" fill-opacity=".55" stroke="none"/>` +
+    `</g>` +
+    // a small lit candle held up in front of the hand
+    `<g stroke="#2A2A3A" stroke-linejoin="round">` +
+    `<rect x="-8" y="-40" width="16" height="44" rx="3" fill="#FFF4DA" stroke-width="3"/>` +
+    `<path d="M0 -40 V-48" stroke-width="2.5"/>` +
+    `<path class="sflame" style="animation-delay:-${(Math.random() * 1.6).toFixed(2)}s" d="M0 -74 C7 -64 11 -56 8 -50 C6 -46 3 -45 0 -45 C-3 -45 -6 -46 -8 -50 C-11 -56 -7 -64 0 -74 Z" fill="#FFC93C" stroke="#D9701A" stroke-width="2"/>` +
     `</g>`;
   const $ = id => document.getElementById(id);
 
@@ -497,7 +533,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const inner = document.createElementNS(ns, "g");
     inner.setAttribute("class", "feather-inner");
     const c = COLORS[i % COLORS.length];
-    // A hand joining the circle around the dove
+    // A hand (with its light) joining the circle around the candle
     inner.innerHTML = `<g transform="translate(200 108)">${presentSvg(c)}</g>`;
     outer.appendChild(inner);
     tail.appendChild(outer);
@@ -603,7 +639,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
   }
 
-  function updateCount(){ $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; $("take").disabled = earned <= 0; }
+  function updateCount(){ const g = $("glow"); if (g) g.setAttribute("opacity", (.12 + earned / FEATHERS * .75).toFixed(2)); $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; $("take").disabled = earned <= 0; }
 
   function gain(){
     if (earned >= FEATHERS) return;
@@ -624,9 +660,9 @@ input[type=range]{accent-color:var(--gold);width:100%}
   }
 
   const LINES = {
-    calm: ["Peaceful and quiet!", "Kind words, kind voices.", "Together we rise!", "Dream big, speak kind."],
-    warn: ["Getting louder…", "Let’s keep it calm…", "Gentle voices…"],
-    loud: ["Too loud! Let’s lower our voices.", "Kind voices, please!", "Let’s listen to each other."]
+    calm: ["Peaceful and quiet!", "Let your light shine!", "Kind words, kind voices.", "Together we rise!", "Dream big, speak kind."],
+    warn: ["Getting louder…", "My flame is flickering…", "Gentle voices…"],
+    loud: ["Too loud! Let’s lower our voices.", "Kind voices, please!", "Let’s listen to each other.", "My light is sputtering!"]
   };
   const MSG_EVERY = {calm: 6000, warn: 3500, loud: 2000};
   let mood = "calm", lastMsgAt = 0, angryUntil = 0, micOff = false, stickyUntil = 0;
@@ -642,7 +678,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     if (!warned && !micOff && performance.now() > stickyUntil) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
   }
 
-  // Dove movement: strolls when calm, paces when warn, flutters around when loud.
+  // Candle movement: strolls when calm, paces when warn, flutters around when loud.
   const turkeyEl = $("turkey"), stageEl = document.querySelector(".stage"), bubbleEl = $("bubble");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let holdTurkey = false, holdFace = 1;
@@ -1024,7 +1060,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
   $("mic").onclick = () => setMic(!micOff);
 
   // Teacher can award a feather for good behavior (button or the F key).
-  const GIFT_LINES = ["Another hand joins in!", "Thank you for being kind!", "Together we rise!"];
+  const GIFT_LINES = ["Another light joins in!", "Thank you for being kind!", "Together we shine!"];
   function giveFeather(){
     if (earned >= FEATHERS) return;
     gain();
@@ -1108,7 +1144,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   // ---------- Full tail: dance! ----------
   function celebrate(){
-    say("ALL HANDS TOGETHER! We did it!");
+    say("ALL OUR LIGHTS TOGETHER! We did it!");
     stickyUntil = performance.now() + 5500;
     if (reduceMotion.matches) return;
     danceUntil = performance.now() + 5300;
