@@ -66,6 +66,10 @@ button{cursor:pointer}
 .brow-n{transition:opacity .2s}
 .warn .brow-n,.loud .brow-n{opacity:0}
 @media (prefers-reduced-motion:reduce){.aur1,.aur2,.twinkle{animation:none}}
+/* Santa is jolly when it's quiet: happy squint eyes and a big grin */
+.eyes-happy,.m-happy,.m-warn,.m-loud{opacity:0;transition:opacity .2s}
+svg.turkey.calm .eyes-happy,svg.turkey.calm .m-happy,svg.turkey.warn .m-warn,svg.turkey.loud .m-loud{opacity:1}
+svg.turkey.calm .eye,svg.turkey.calm .pupil,svg.turkey.calm .lid{opacity:0}
 .display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
 
 .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
@@ -490,11 +494,12 @@ input[type=range]{accent-color:var(--gold);width:100%}
             <path d="M164 168 C158 204 176 230 200 236 C224 230 242 204 236 168 C228 182 214 188 200 188 C186 188 172 182 164 168 Z" fill="#FFFFFF" stroke="#3B2314" stroke-width="4" stroke-linejoin="round"/>
             <circle cx="177" cy="175" r="7" fill="#E88A8A" opacity=".6"/>
             <circle cx="223" cy="175" r="7" fill="#E88A8A" opacity=".6"/>
-            <circle cx="186" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
-            <circle cx="214" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle class="eye" cx="186" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle class="eye" cx="214" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
             <circle class="pupil" cx="187" cy="161" r="4.5" fill="#3B2314"/>
             <circle class="pupil" cx="213" cy="161" r="4.5" fill="#3B2314"/>
             <path class="lid" d="M177 161 a9 9 0 0 1 18 0 Z M205 161 a9 9 0 0 1 18 0 Z" fill="#F3C9A6" stroke="#3B2314" stroke-width="2.5" stroke-linejoin="round"/>
+            <path class="eyes-happy" d="M177 163 q9 -11 18 0 M205 163 q9 -11 18 0" fill="none" stroke="#3B2314" stroke-width="4.5" stroke-linecap="round"/>
             <g class="brow-n" fill="none" stroke-linecap="round">
               <path d="M176 148 q10 -6 20 0 M204 148 q10 -6 20 0" stroke="#3B2314" stroke-width="9"/>
               <path d="M176 148 q10 -6 20 0 M204 148 q10 -6 20 0" stroke="#FFFFFF" stroke-width="5"/>
@@ -503,6 +508,10 @@ input[type=range]{accent-color:var(--gold);width:100%}
               <path d="M175 144 l20 8 M225 144 l-20 8" stroke="#3B2314" stroke-width="9"/>
               <path d="M175 144 l20 8 M225 144 l-20 8" stroke="#FFFFFF" stroke-width="5"/>
             </g>
+            <path class="m-happy" d="M184 194 Q200 218 216 194 Q200 201 184 194 Z" fill="#8E2A2A" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+            <path class="m-happy" d="M193 205 Q200 211 207 205 Q200 202 193 205 Z" fill="#E57373"/>
+            <path class="m-warn" d="M190 202 H210" stroke="#3B2314" stroke-width="4" stroke-linecap="round"/>
+            <path class="m-loud" d="M187 207 Q200 194 213 207" fill="none" stroke="#3B2314" stroke-width="4.5" stroke-linecap="round"/>
             <path class="wattle" d="M200 184 C190 177 172 180 167 193 C180 191 190 194 200 190 C210 194 220 191 233 193 C228 180 210 177 200 184 Z" fill="#FFFFFF" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
             <circle cx="200" cy="177" r="8" fill="#E57373" stroke="#3B2314" stroke-width="3"/>
             <path d="M166 132 C168 92 214 74 246 92 C262 102 268 120 266 140 L254 140 C252 126 246 116 236 112 L234 132 Z" fill="#C8282E" stroke="#3B2314" stroke-width="4" stroke-linejoin="round"/>
