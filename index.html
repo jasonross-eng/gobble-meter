@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gobble Meter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#F8E9B8; --sky2:#F1C57A; --field:#8C9B58; --field2:#6C7B3E;
+  --ink:#3B2314; --muted:#6E5644; --panel:#FFF8E6; --panel-line:#E2C98E;
+  --cranberry:#A3283F; --gold:#E3A12F; --pumpkin:#D8662A; --sage:#7C8C4E;
+  --meter-bg:#EBD7A2; --btn:#3B2314; --btn-ink:#FFF8E6;
+  --sun:#F4B740; --cloud:#FFF6DD; --hill1:#DDB067; --hill2:#B3A35A;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sun:#F2E6C4; --cloud:#4A3C5A; --hill1:#4B3550; --hill2:#3E4630;
+    --sky:#2A2342; --sky2:#6A3B47; --field:#45512C; --field2:#323C1F;
+    --ink:#F7EAD0; --muted:#D2BE9E; --panel:#2C2234; --panel-line:#4E3E52;
+    --meter-bg:#40354A; --btn:#F7EAD0; --btn-ink:#2C2234;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --sun:#F2E6C4; --cloud:#4A3C5A; --hill1:#4B3550; --hill2:#3E4630;
+  --sky:#2A2342; --sky2:#6A3B47; --field:#45512C; --field2:#323C1F;
+  --ink:#F7EAD0; --muted:#D2BE9E; --panel:#2C2234; --panel-line:#4E3E52;
+  --meter-bg:#40354A; --btn:#F7EAD0; --btn-ink:#2C2234;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{
+  font-family:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 70%);
+  overflow:hidden;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cranberry);outline-offset:3px}
+.display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
+
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem clamp(1rem,3vw,2rem) 0}
+.brand{font-size:clamp(1.4rem,3vw,2.1rem);font-weight:900;margin:0;line-height:1}
+.clock{text-align:right}
+.clock .time{font-size:clamp(2.4rem,7vw,4.6rem);font-weight:900;line-height:.95;font-variant-numeric:tabular-nums}
+.clock .sub{font-size:clamp(.9rem,1.6vw,1.1rem);color:var(--muted)}
+.clock.urgent .time{color:var(--cranberry)}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;margin-top:.4rem}
+.tool{border:2px solid var(--ink);background:transparent;border-radius:999px;padding:.25rem .8rem;font-weight:700;font-size:.95rem}
+.tool:hover{background:var(--ink);color:var(--sky)}
+
+.stage{position:relative;min-height:0;display:flex;align-items:flex-end;justify-content:center}
+.farm{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.turkey-wrap{position:relative;height:100%;width:min(100%,900px);display:flex;align-items:flex-end;justify-content:center}
+svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visible;position:relative;z-index:1}
+.bubble{
+  position:absolute;z-index:2;top:6%;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:3px solid var(--ink);border-radius:1.4rem;
+  padding:.45rem 1.1rem;font-size:clamp(1.1rem,2.6vw,1.8rem);font-weight:800;white-space:nowrap;
+}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-14px;width:22px;height:22px;background:var(--panel);border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
+.score{
+  position:absolute;z-index:2;left:clamp(.8rem,3vw,2rem);bottom:6%;
+  background:var(--panel);border:3px solid var(--ink);border-radius:1rem;padding:.6rem .9rem;min-width:11rem;
+}
+.score .n{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:900;line-height:1}
+.score .lbl{font-size:.95rem;color:var(--muted)}
+.next{height:10px;border-radius:999px;background:var(--meter-bg);margin-top:.45rem;overflow:hidden}
+.next>i{display:block;height:100%;width:0;background:var(--gold);border-radius:999px;transition:width .3s linear}
+
+.tk-body{transform-box:view-box;transform-origin:200px 330px}
+.calm .tk-body{animation:bob 2.4s ease-in-out infinite}
+.loud .tk-body{animation:shake .18s linear infinite}
+.brow{opacity:0;transition:opacity .2s}
+.warn .brow,.loud .brow{opacity:1}
+.pupil{transition:r .2s}
+.loud .pupil{r:2}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-1deg)}75%{transform:translateX(5px) rotate(1deg)}}
+
+.feather-inner{transform-box:view-box;transform-origin:200px 250px;transform:scale(0);opacity:0;transition:transform .7s cubic-bezier(.3,1.6,.5,1),opacity .2s}
+.feather-inner.on{transform:scale(1);opacity:1}
+.feather-inner.fall{animation:fall 1.5s ease-in forwards}
+@keyframes fall{0%{transform:scale(1);opacity:1}100%{transform:translate(30px,320px) rotate(70deg) scale(.8);opacity:0}}
+
+.meter-row{padding:.8rem clamp(1rem,3vw,2rem) 1rem;background:var(--field2);display:grid;grid-template-columns:1fr auto;gap:.5rem 1.5rem;align-items:center}
+.meter{position:relative;height:clamp(28px,4.5vh,44px);border-radius:999px;background:var(--meter-bg);border:3px solid var(--ink);overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--sage);transition:background .2s}
+.meter.warn .fill{background:var(--gold)}
+.meter.loud .fill{background:var(--cranberry)}
+.meter .limit{position:absolute;top:-3px;bottom:-3px;width:5px;background:var(--ink);transform:translateX(-50%)}
+.meter-labels{display:flex;justify-content:space-between;color:#FFF8E6;font-weight:700;font-size:.95rem;grid-column:1}
+.limit-ctl{grid-row:1 / span 2;grid-column:2;color:#FFF8E6;font-weight:700;display:flex;flex-direction:column;gap:.2rem;font-size:.95rem;min-width:11rem}
+input[type=range]{accent-color:var(--gold);width:100%}
+
+.overlay{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1rem;background:color-mix(in srgb,var(--sky2) 55%,transparent);overflow:auto}
+.overlay[hidden]{display:none}
+.card{background:var(--panel);border:4px solid var(--ink);border-radius:1.6rem;padding:clamp(1.2rem,4vw,2.2rem);width:min(560px,100%);box-shadow:8px 8px 0 var(--ink)}
+.card h2{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:900;margin:0 0 .4rem;line-height:1.05}
+.card p{margin:.3rem 0 1rem;line-height:1.5;color:var(--muted);max-width:60ch}
+.q{display:block;font-weight:700;font-size:1.2rem;margin:1rem 0 .5rem}
+.mins{display:flex;align-items:center;gap:.6rem}
+.mins input{width:6.5rem;font-size:2rem;font-weight:800;padding:.2rem .6rem;border:3px solid var(--ink);border-radius:.8rem;background:transparent;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.chip{border:2px solid var(--panel-line);background:transparent;border-radius:999px;padding:.3rem .85rem;font-weight:700}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.range-ends{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
+.go{margin-top:1.4rem;width:100%;border:0;border-radius:1rem;padding:.9rem 1rem;background:var(--btn);color:var(--btn-ink);font-size:1.35rem;font-weight:800}
+.go:hover{filter:brightness(1.15)}
+.err{color:var(--cranberry);font-weight:700;margin-top:.8rem;min-height:1.2em}
+.big-feathers{font-size:clamp(3rem,10vw,5rem);font-weight:900;line-height:1;color:var(--pumpkin);margin:.4rem 0}
+
+@media (max-width:640px){
+  .meter-row{grid-template-columns:1fr}
+  .limit-ctl{grid-row:auto;grid-column:1}
+  .score{min-width:8rem;bottom:3%}
+  .bubble{top:2%}
+}
+@media (prefers-reduced-motion:reduce){
+  .calm .tk-body,.loud .tk-body{animation:none}
+  .feather-inner{transition:opacity .2s}
+  .feather-inner.fall{animation:none;opacity:0}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <h1 class="brand display">Gobble Meter</h1>
+    <div class="clock display" id="clock">
+      <div class="time" id="time">--:--</div>
+      <div class="sub" id="timeSub">left in class</div>
+      <div class="tools">
+        <button class="tool" id="minus">−1 min</button>
+        <button class="tool" id="plus">+1 min</button>
+        <button class="tool" id="pause">Pause</button>
+        <button class="tool" id="full">Full screen</button>
+        <button class="tool" id="stop">End</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <svg class="farm" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <pattern id="posts" x="0" y="412" width="70" height="62" patternUnits="userSpaceOnUse">
+          <rect x="28" y="2" width="14" height="58" fill="#D9C49A" stroke="#3B2314" stroke-width="3"/>
+        </pattern>
+        <g id="stalk" stroke="#3B2314" stroke-width="3" stroke-linejoin="round">
+          <path d="M0 0 C-4 -50 4 -100 0 -150" fill="none" stroke="#9C7A30" stroke-width="7"/>
+          <path d="M0 -40 C20 -60 34 -58 44 -46 C28 -50 16 -44 0 -36 Z" fill="#CFA94F"/>
+          <path d="M0 -80 C-20 -100 -34 -98 -44 -86 C-28 -90 -16 -84 0 -76 Z" fill="#CFA94F"/>
+          <path d="M0 -115 C18 -135 30 -134 38 -124 C24 -126 14 -120 0 -112 Z" fill="#CFA94F"/>
+          <ellipse cx="8" cy="-70" rx="8" ry="20" fill="#E9B949" transform="rotate(20 8 -70)"/>
+          <path d="M0 -150 l-8 -16 M0 -150 l0 -18 M0 -150 l8 -16" fill="none" stroke="#9C7A30" stroke-width="4"/>
+        </g>
+        <g id="pumpkin" stroke="#3B2314" stroke-width="3">
+          <ellipse cx="-14" cy="0" rx="18" ry="24" fill="#D8662A"/>
+          <ellipse cx="14" cy="0" rx="18" ry="24" fill="#D8662A"/>
+          <ellipse cx="0" cy="0" rx="16" ry="25" fill="#E57A35"/>
+          <path d="M0 -24 q2 -10 8 -14" fill="none" stroke="#5E6B34" stroke-width="6" stroke-linecap="round"/>
+        </g>
+      </defs>
+
+      <circle cx="960" cy="115" r="58" fill="var(--sun)"/>
+      <g fill="var(--cloud)">
+        <ellipse cx="250" cy="120" rx="70" ry="22"/><ellipse cx="285" cy="104" rx="40" ry="24"/><ellipse cx="225" cy="108" rx="30" ry="18"/>
+        <ellipse cx="660" cy="80" rx="60" ry="18"/><ellipse cx="690" cy="66" rx="34" ry="20"/>
+      </g>
+      <path d="M0 395 Q200 315 420 375 T850 355 T1200 365 V600 H0 Z" fill="var(--hill1)"/>
+      <path d="M0 440 Q300 385 600 425 T1200 415 V600 H0 Z" fill="var(--hill2)"/>
+
+      <g stroke="#3B2314" stroke-width="4" stroke-linejoin="round">
+        <rect x="110" y="322" width="200" height="140" fill="#A8322D"/>
+        <path d="M95 328 L135 268 L210 240 L285 268 L325 328 Z" fill="#6A2A24"/>
+        <rect x="190" y="272" width="40" height="36" fill="#F1C57A"/>
+        <rect x="172" y="372" width="76" height="90" fill="#8A2723"/>
+        <path d="M172 372 L248 462 M248 372 L172 462" stroke="#FFF8E6" stroke-width="5"/>
+        <rect x="172" y="372" width="76" height="90" fill="none" stroke="#FFF8E6" stroke-width="5"/>
+      </g>
+      <g stroke="#3B2314" stroke-width="4">
+        <rect x="326" y="288" width="56" height="174" fill="#C9C2B4"/>
+        <path d="M326 290 Q354 238 382 290 Z" fill="#7E8C99"/>
+        <path d="M326 330 H382 M326 372 H382 M326 414 H382" stroke-width="2.5"/>
+      </g>
+
+      <rect x="395" y="412" width="805" height="62" fill="url(#posts)"/>
+      <g fill="#D9C49A" stroke="#3B2314" stroke-width="3">
+        <rect x="395" y="426" width="805" height="9"/>
+        <rect x="395" y="448" width="805" height="9"/>
+      </g>
+
+      <rect x="0" y="460" width="1200" height="140" fill="var(--field)"/>
+      <path d="M0 460 H1200" stroke="var(--field2)" stroke-width="6"/>
+
+      <g stroke="#3B2314" stroke-width="3">
+        <rect x="20" y="440" width="80" height="40" rx="6" fill="#E2B24C"/>
+        <rect x="40" y="404" width="80" height="40" rx="6" fill="#EBC062"/>
+        <circle cx="935" cy="468" r="40" fill="#E2B24C"/>
+        <path d="M935 468 m-8 0 a8 8 0 1 1 16 0 a16 16 0 1 1 -32 0 a24 24 0 1 1 48 0 a32 32 0 1 1 -64 0" fill="none" stroke="#B4862E" stroke-width="3"/>
+      </g>
+
+      <use href="#stalk" transform="translate(1050 470) scale(1.05)"/>
+      <use href="#stalk" transform="translate(1095 476) scale(1.2)"/>
+      <use href="#stalk" transform="translate(1145 470) scale(.95)"/>
+      <use href="#stalk" transform="translate(1185 478) scale(1.15)"/>
+
+      <use href="#pumpkin" transform="translate(430 520)"/>
+      <use href="#pumpkin" transform="translate(480 548) scale(.75)"/>
+      <use href="#pumpkin" transform="translate(780 530) scale(1.1)"/>
+      <use href="#pumpkin" transform="translate(838 556) scale(.8)"/>
+      <use href="#pumpkin" transform="translate(1010 545) scale(1.25)"/>
+    </svg>
+    <div class="bubble display" id="bubble">Nice and quiet!</div>
+    <div class="score">
+      <div class="n display"><span id="count">0</span> / 10</div>
+      <div class="lbl">tail feathers</div>
+      <div class="next" title="Next feather"><i id="nextBar"></i></div>
+    </div>
+    <div class="turkey-wrap">
+      <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="Turkey whose tail feathers grow as the class stays quiet">
+        <g id="tail"></g>
+        <g class="tk-body">
+          <g stroke="#C9821F" stroke-width="7" stroke-linecap="round" fill="none">
+            <path d="M180 300 L176 330 M176 330 l-14 6 M176 330 l2 8 M176 330 l14 4"/>
+            <path d="M220 300 L224 330 M224 330 l14 6 M224 330 l-2 8 M224 330 l-14 4"/>
+          </g>
+          <ellipse cx="200" cy="250" rx="80" ry="66" fill="#8A5A2E" stroke="#3B2314" stroke-width="5"/>
+          <path d="M150 262 q50 34 100 0" fill="none" stroke="#6B4322" stroke-width="5" stroke-linecap="round"/>
+          <path d="M160 280 q40 24 80 0" fill="none" stroke="#6B4322" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="146" cy="246" rx="22" ry="38" fill="#74481F" stroke="#3B2314" stroke-width="4" transform="rotate(18 146 246)"/>
+          <ellipse cx="254" cy="246" rx="22" ry="38" fill="#74481F" stroke="#3B2314" stroke-width="4" transform="rotate(-18 254 246)"/>
+          <circle cx="200" cy="168" r="36" fill="#9E6B3C" stroke="#3B2314" stroke-width="5"/>
+          <circle cx="186" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+          <circle cx="214" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+          <circle class="pupil" cx="187" cy="161" r="4.5" fill="#3B2314"/>
+          <circle class="pupil" cx="213" cy="161" r="4.5" fill="#3B2314"/>
+          <path class="brow" d="M175 145 l18 6 M225 145 l-18 6" stroke="#3B2314" stroke-width="4" stroke-linecap="round"/>
+          <path d="M190 172 L210 172 L200 188 Z" fill="#E3A12F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M206 180 q10 6 6 22 q-4 8 -9 0 q-2 -10 3 -22 z" fill="#B3283F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <footer class="meter-row">
+    <div class="meter" id="meter" role="meter" aria-label="Classroom noise level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="fill" id="fill"></div>
+      <div class="limit" id="limitMark"></div>
+    </div>
+    <div class="meter-labels"><span>Whisper</span><span>Talking</span><span>Too loud</span></div>
+    <label class="limit-ctl">Loudness limit
+      <input type="range" id="limit2" min="30" max="90" value="60" aria-label="Loudness limit">
+    </label>
+  </footer>
+
+  <div class="overlay" id="setup">
+    <div class="card">
+      <h2 class="display">Gobble Meter</h2>
+      <p>Stay under the loudness limit to grow the turkey’s tail feathers. If the room gets too loud, a feather falls off.</p>
+      <label class="q" for="minsInput">How many minutes are left in class?</label>
+      <div class="mins"><input id="minsInput" type="number" min="1" max="180" value="20" inputmode="numeric"><span>minutes</span></div>
+      <div class="chips" id="chips"></div>
+      <label class="q" for="limit1">Loudness limit</label>
+      <input type="range" id="limit1" min="30" max="90" value="60">
+      <div class="range-ends"><span>Strict</span><span>Relaxed</span></div>
+      <button class="go display" id="start">Start listening</button>
+      <div class="err" id="err" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="done" hidden>
+    <div class="card" style="text-align:center">
+      <h2 class="display">Time’s up!</h2>
+      <p style="margin-inline:auto">Your class grew</p>
+      <div class="big-feathers display"><span id="finalCount">0</span> of 10</div>
+      <p style="margin-inline:auto" id="finalMsg">tail feathers.</p>
+      <button class="go display" id="again">Start again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const FEATHERS = 10;
+  const COLORS = ["#A3283F","#D8662A","#E3A12F","#7C8C4E","#8A5A2E"];
+  const $ = id => document.getElementById(id);
+
+  const tail = $("tail");
+  const ns = "http://www.w3.org/2000/svg";
+  const feathers = [];
+  for (let i = 0; i < FEATHERS; i++) {
+    const angle = -72 + i * (144 / (FEATHERS - 1));
+    const outer = document.createElementNS(ns, "g");
+    outer.setAttribute("transform", `rotate(${angle} 200 250)`);
+    const inner = document.createElementNS(ns, "g");
+    inner.setAttribute("class", "feather-inner");
+    const c = COLORS[i % COLORS.length];
+    inner.innerHTML =
+      `<ellipse cx="200" cy="108" rx="25" ry="90" fill="${c}" stroke="#3B2314" stroke-width="4"/>` +
+      `<ellipse cx="200" cy="64" rx="13" ry="30" fill="#FFF8E6" opacity=".35"/>` +
+      `<line x1="200" y1="40" x2="200" y2="190" stroke="#3B2314" stroke-width="2.5" opacity=".5"/>`;
+    outer.appendChild(inner);
+    tail.appendChild(outer);
+    feathers.push(inner);
+  }
+
+  const chipsEl = $("chips"), minsInput = $("minsInput");
+  [5,10,15,20,30,45,60].forEach(m => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = m + " min";
+    b.setAttribute("aria-pressed", m === 20 ? "true" : "false");
+    b.onclick = () => { minsInput.value = m; syncChips(); };
+    chipsEl.appendChild(b);
+  });
+  function syncChips(){
+    [...chipsEl.children].forEach(b => b.setAttribute("aria-pressed", String(parseInt(b.textContent) === +minsInput.value)));
+  }
+  minsInput.addEventListener("input", syncChips);
+
+  let limit = 60;
+  const l1 = $("limit1"), l2 = $("limit2");
+  function setLimit(v){
+    limit = +v; l1.value = l2.value = v;
+    $("limitMark").style.left = limit + "%";
+    try { localStorage.setItem("gobble-limit", String(limit)); } catch(e){}
+  }
+  l1.oninput = e => setLimit(e.target.value);
+  l2.oninput = e => setLimit(e.target.value);
+  let savedLimit = 60;
+  try { const s = parseInt(localStorage.getItem("gobble-limit")); if (s >= 30 && s <= 90) savedLimit = s; } catch(e){}
+  setLimit(savedLimit);
+
+  let audioCtx, analyser, buf, stream;
+  let level = 0, endTime = 0, pausedLeft = null, running = false;
+  let heard = false, warned = false, startedAt = 0;
+  let earned = 0, quietMs = 0, loudMs = 0, lastLoss = 0, interval = 60000, lastFrame = 0;
+
+  async function start(){
+    const mins = Math.max(1, Math.min(180, parseInt(minsInput.value) || 0));
+    $("err").textContent = "";
+    try { if (audioCtx) audioCtx.close(); } catch(e){}
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $("err").textContent = "This page can’t reach the microphone from here. Download the file and open it directly in Chrome.";
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    } catch (e) {
+      const msgs = {
+        NotAllowedError: "The microphone was blocked. Click the lock or mic icon in the address bar, choose Allow, then try again.",
+        SecurityError: "The microphone was blocked by the page around this one. Download the file and open it directly in Chrome.",
+        NotFoundError: "No microphone was found. Plug one in or check your computer’s sound settings.",
+        NotReadableError: "Another app is using the microphone. Close Zoom, Meet, or other tabs that use it, then try again.",
+        OverconstrainedError: "This microphone didn’t accept the settings. Try a different microphone."
+      };
+      $("err").textContent = (msgs[e.name] || "The microphone didn’t start.") + " (" + e.name + ")";
+      return;
+    }
+    if (audioCtx.state === "suspended") { try { await audioCtx.resume(); } catch(e){} }
+    const src = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    buf = new Float32Array(analyser.fftSize);
+    src.connect(analyser);
+
+    const total = mins * 60000;
+    endTime = Date.now() + total;
+    pausedLeft = null;
+    interval = Math.max(6000, total * 0.85 / FEATHERS);
+    earned = 0; quietMs = 0; loudMs = 0; lastLoss = 0;
+    feathers.forEach(f => f.classList.remove("on","fall"));
+    updateCount();
+    $("pause").textContent = "Pause";
+    $("timeSub").textContent = "left in class";
+    $("setup").hidden = true; $("done").hidden = true;
+    heard = false; warned = false; startedAt = Date.now(); lastMood = "";
+    running = true; lastFrame = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function stopAudio(){
+    running = false;
+    try { stream && stream.getTracks().forEach(t => t.stop()); } catch(e){}
+    try { audioCtx && audioCtx.close(); } catch(e){}
+  }
+
+  function readLevel(){
+    analyser.getFloatTimeDomainData(buf);
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    if (s > 1e-9) heard = true;
+    const db = 20 * Math.log10(Math.sqrt(s / buf.length) + 1e-8);
+    const v = Math.max(0, Math.min(100, (db + 70) / 60 * 100));
+    level = v > level ? level * 0.6 + v * 0.4 : level * 0.9 + v * 0.1;
+    return level;
+  }
+
+  function fmt(ms){
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+  }
+
+  function updateCount(){ $("count").textContent = earned; }
+
+  function gain(){
+    if (earned >= FEATHERS) return;
+    const f = feathers[earned];
+    f.classList.remove("fall");
+    void f.getBBox();
+    f.classList.add("on");
+    earned++; updateCount();
+  }
+  function lose(){
+    if (earned <= 0) return;
+    earned--;
+    const f = feathers[earned];
+    f.classList.remove("on");
+    f.classList.add("fall");
+    updateCount();
+  }
+
+  let lastMood = "";
+  function setMood(m){
+    if (m === lastMood) return;
+    lastMood = m;
+    const t = $("turkey"), meter = $("meter");
+    t.classList.remove("calm","warn","loud"); t.classList.add(m);
+    meter.classList.remove("warn","loud"); if (m !== "calm") meter.classList.add(m);
+    if (!warned) $("bubble").textContent = m === "calm" ? "Nice and quiet!" : m === "warn" ? "Getting louder…" : "Too loud! My feathers!";
+  }
+
+  function loop(now){
+    if (!running) return;
+    const dt = Math.min(250, now - lastFrame); lastFrame = now;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const lv = readLevel();
+    const track = stream && stream.getAudioTracks()[0];
+    const silent = !heard || (track && track.muted);
+    if (silent && !warned && Date.now() - startedAt > 4000) {
+      warned = true;
+      $("bubble").textContent = "I can’t hear anything! Check the mic.";
+    } else if (!silent && warned) {
+      warned = false; lastMood = "";
+    }
+    $("fill").style.width = lv + "%";
+    $("meter").setAttribute("aria-valuenow", Math.round(lv));
+
+    const loud = lv > limit, warn = lv > limit * 0.78;
+    setMood(loud ? "loud" : warn ? "warn" : "calm");
+
+    const left = pausedLeft !== null ? pausedLeft : endTime - Date.now();
+    $("time").textContent = fmt(left);
+    $("clock").classList.toggle("urgent", left <= 60000);
+
+    if (pausedLeft === null) {
+      if (loud) {
+        loudMs += dt;
+        if (loudMs > 1200 && Date.now() - lastLoss > 4000) {
+          lose(); lastLoss = Date.now(); loudMs = 0;
+        }
+      } else {
+        loudMs = Math.max(0, loudMs - dt);
+        if (earned < FEATHERS) {
+          quietMs += dt;
+          if (quietMs >= interval) { quietMs = 0; gain(); }
+        }
+      }
+      $("nextBar").style.width = (earned >= FEATHERS ? 100 : quietMs / interval * 100) + "%";
+      if (left <= 0) { finish(); return; }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function finish(){
+    stopAudio();
+    $("time").textContent = "0:00";
+    $("finalCount").textContent = earned;
+    $("finalMsg").textContent =
+      earned >= FEATHERS ? "tail feathers. A perfect turkey!" :
+      earned >= 7 ? "tail feathers. Great job keeping it calm!" :
+      earned >= 4 ? "tail feathers. Let’s grow even more next time." :
+      "tail feathers. Let’s try for more next time.";
+    $("done").hidden = false;
+    $("again").focus();
+  }
+
+  $("start").onclick = start;
+  minsInput.addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+  $("again").onclick = () => { $("done").hidden = true; $("setup").hidden = false; minsInput.focus(); };
+  $("stop").onclick = () => { stopAudio(); $("setup").hidden = false; };
+  $("pause").onclick = () => {
+    if (pausedLeft === null) { pausedLeft = Math.max(0, endTime - Date.now()); $("pause").textContent = "Resume"; $("timeSub").textContent = "paused"; }
+    else { endTime = Date.now() + pausedLeft; pausedLeft = null; $("pause").textContent = "Pause"; $("timeSub").textContent = "left in class"; }
+  };
+  function adjust(ms){
+    if (pausedLeft !== null) pausedLeft = Math.max(1000, pausedLeft + ms);
+    else endTime = Math.max(Date.now() + 1000, endTime + ms);
+  }
+  $("plus").onclick = () => adjust(60000);
+  $("minus").onclick = () => adjust(-60000);
+  $("full").onclick = () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch(e){}
+  };
+})();
+</script>
+</body>
+</html>
