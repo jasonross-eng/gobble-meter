@@ -254,6 +254,45 @@ input[type=range]{accent-color:var(--gold);width:100%}
       <rect x="0" y="460" width="1200" height="140" fill="var(--field)"/>
       <path d="M0 460 H1200" stroke="var(--field2)" stroke-width="6"/>
 
+      <!-- Pilgrim farmer who wanders by now and then (positioned by script) -->
+      <g id="pilgrim" style="display:none" stroke="#3B2314" stroke-width="2.5" stroke-linejoin="round">
+        <g id="pilBody">
+          <g id="pilLegB">
+            <rect x="-5" y="-52" width="10" height="30" fill="#4A3324"/>
+            <rect x="-4" y="-24" width="8" height="18" fill="#D9D1C0"/>
+            <ellipse cx="4" cy="-4" rx="9" ry="5" fill="#1E1A1C"/>
+          </g>
+          <g id="pilLegA">
+            <rect x="-5" y="-52" width="10" height="30" fill="#5A3E2B"/>
+            <rect x="-4" y="-24" width="8" height="18" fill="#EDE6D6"/>
+            <ellipse cx="4" cy="-4" rx="9" ry="5" fill="#1E1A1C"/>
+            <rect x="3" y="-9" width="5" height="4" fill="#E3A12F" stroke-width="1"/>
+          </g>
+          <path d="M-13 -98 L15 -98 L20 -46 L-18 -46 Z" fill="#2F2A2E"/>
+          <rect x="-16" y="-64" width="35" height="6" fill="#1A1416"/>
+          <rect x="9" y="-66" width="7" height="9" fill="none" stroke="#E3A12F" stroke-width="2"/>
+          <path d="M-12 -99 L16 -99 L21 -90 L-15 -90 Z" fill="#F4EFE3"/>
+          <g transform="translate(22 -58) rotate(-125)">
+            <line x1="0" y1="0" x2="98" y2="0" stroke="#9C7A30" stroke-width="4"/>
+            <path d="M98 -9 V9 M98 -8 H118 M98 0 H120 M98 8 H118" fill="none" stroke="#7E8C99" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <line x1="2" y1="-92" x2="13" y2="-68" stroke="#3B2314" stroke-width="11" stroke-linecap="round"/>
+          <line x1="2" y1="-92" x2="13" y2="-68" stroke="#2F2A2E" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="15" cy="-64" r="5" fill="#F1C9A0"/>
+          <circle cx="0" cy="-112" r="13" fill="#6B4322"/>
+          <circle cx="3" cy="-110" r="11" fill="#F1C9A0"/>
+          <circle cx="9" cy="-113" r="1.6" fill="#3B2314" stroke="none"/>
+          <path d="M13 -112 q4 3 0 5" fill="#F1C9A0" stroke-width="2"/>
+          <path d="M5 -104 q3 2 6 0" fill="none" stroke-width="1.8" stroke-linecap="round"/>
+          <g id="pilHat">
+            <ellipse cx="2" cy="-122" rx="21" ry="4" fill="#1E1A1C"/>
+            <path d="M-10 -122 L14 -122 L12 -152 L-8 -152 Z" fill="#1E1A1C"/>
+            <rect x="-10" y="-130" width="23" height="5" fill="#4A3F44" stroke-width="1.5"/>
+            <rect x="-1" y="-131" width="7" height="7" fill="none" stroke="#E3A12F" stroke-width="2"/>
+          </g>
+        </g>
+      </g>
+
       <g stroke="#3B2314" stroke-width="3">
         <rect x="20" y="440" width="80" height="40" rx="6" fill="#E2B24C"/>
         <rect x="40" y="404" width="80" height="40" rx="6" fill="#EBC062"/>
@@ -640,6 +679,32 @@ input[type=range]{accent-color:var(--gold);width:100%}
   const LEAF_COLORS = ["#C8452B", "#D8662A", "#E3A12F", "#A3283F", "#B5762E"];
   let leaves = [], drops = [], splashes = [];
   let event = null, nextEventAt = performance.now() + 20000 + Math.random() * 25000;
+  const pilEl = $("pilgrim"), pilBody = $("pilBody"), pilLegA = $("pilLegA"), pilLegB = $("pilLegB"), pilHat = $("pilHat");
+  let pil = null, nextPilAt = performance.now() + 30000 + Math.random() * 30000;
+  function startPilgrim(){
+    const dir = Math.random() < .5 ? 1 : -1;
+    pil = {dir, x: dir > 0 ? -80 : 1280, speed: 46 + Math.random() * 14, ph: 0};
+    pilEl.style.display = "";
+  }
+  window.gobblePilgrim = startPilgrim; // handy for trying it out from the console
+  function walkPilgrim(now, dt){
+    if (!pil && now > nextPilAt && !reduceMotion.matches) startPilgrim();
+    if (!pil) return;
+    pil.x += pil.dir * pil.speed * dt;
+    pil.ph += dt * pil.speed / 9;
+    const sw = Math.sin(pil.ph) * 24, bob = -Math.abs(Math.cos(pil.ph)) * 3;
+    pilLegA.setAttribute("transform", `rotate(${sw.toFixed(1)} 0 -50)`);
+    pilLegB.setAttribute("transform", `rotate(${(-sw).toFixed(1)} 0 -50)`);
+    pilBody.setAttribute("transform", `translate(0 ${bob.toFixed(1)})`);
+    // Tip his hat to the turkey as he passes the middle
+    const d = Math.abs(pil.x - 600), tip = d < 90 ? Math.sin((1 - d / 90) * Math.PI / 2) : 0;
+    pilHat.setAttribute("transform", `translate(0 ${(-9 * tip).toFixed(1)}) rotate(${(-22 * tip).toFixed(1)} 2 -122)`);
+    pilEl.setAttribute("transform", `translate(${pil.x.toFixed(1)} 480) scale(${1.05 * pil.dir} 1.05)`);
+    if (pil.x < -100 || pil.x > 1300) {
+      pil = null; pilEl.style.display = "none";
+      nextPilAt = now + 60000 + Math.random() * 90000;
+    }
+  }
   let lastSky = 0, wLast = performance.now(), dpr = 1, groundTop = 0, groundBot = 0;
 
   function sizeCanvas(){
@@ -710,6 +775,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     if (rainAmt < .002) rainAmt = 0;
 
     if (now - lastSky > 200) { paintSky(now); lastSky = now; }
+    walkPilgrim(now, dt);
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
