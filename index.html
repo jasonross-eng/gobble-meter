@@ -66,7 +66,7 @@ button{cursor:pointer}
 
 .stage{position:relative;min-height:0;display:flex;align-items:flex-end;justify-content:center}
 .farm{position:absolute;inset:0;width:100%;height:100%;z-index:0}
-.turkey-wrap{position:relative;height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.turkey-wrap{perspective:1400px;position:relative;height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center}
 svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visible;position:relative;z-index:1}
 .bubble{
   position:absolute;z-index:2;top:6%;left:50%;transform:translateX(-50%);
@@ -133,6 +133,25 @@ svg.turkey.loud{--gait:.26s}
 .feather-inner.on{transform:scale(1);opacity:1}
 .feather-inner.fall{animation:fall 1.5s ease-in forwards}
 .feather-inner.plucked{transition:none;transform:scale(0);opacity:0}
+/* 10 feathers: hop, wiggle, spin around, big jump */
+svg.turkey.dance{animation:dance 2.6s ease-in-out 2}
+.dance .tk-all{animation:wiggle .32s ease-in-out infinite alternate!important}
+.dance .leg-l{animation:step .32s ease-in-out infinite!important}
+.dance .leg-r{animation:step .32s ease-in-out infinite -.16s!important}
+@keyframes dance{
+  0%{translate:0 0;rotate:y 0deg}
+  10%{translate:0 -55px}
+  20%{translate:0 0}
+  30%{translate:0 -55px}
+  40%{translate:0 0;rotate:y 0deg}
+  55%{translate:0 -25px;rotate:y 360deg}
+  62%{translate:0 0;rotate:y 360deg}
+  80%{translate:0 -140px;rotate:y 720deg}
+  92%{translate:0 0;rotate:y 720deg}
+  96%{translate:0 -15px}
+  100%{translate:0 0;rotate:y 720deg}
+}
+@keyframes wiggle{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
 .plucker{position:absolute;z-index:2;bottom:0;left:0;display:none;overflow:visible;pointer-events:none}
 .flying-feather{position:absolute;z-index:3;left:0;top:0;pointer-events:none;overflow:visible}
 .yelp .tk-all{animation:yelp .7s ease-out!important}
@@ -193,6 +212,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
         <button class="tool" id="plus">+1 min</button>
         <button class="tool" id="pause">Pause</button>
         <button class="tool" id="mic" aria-pressed="false">Mic off</button>
+        <button class="tool" id="sound" aria-pressed="false">Sound off</button>
         <button class="tool" id="full">Full screen</button>
         <button class="tool" id="stop">End</button>
       </div>
@@ -538,6 +558,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     void f.getBBox();
     f.classList.add("on");
     earned++; updateCount();
+    if (earned === FEATHERS) celebrate();
   }
   function lose(){
     if (earned <= 0) return;
@@ -559,6 +580,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
   let lastMood = "";
   function setMood(m){
     if (m === lastMood) return;
+    if (m === "loud" && running) loudGobble();
     lastMood = m; mood = m;
     const t = $("turkey"), meter = $("meter");
     t.classList.remove("calm","warn","loud"); t.classList.add(m);
@@ -602,7 +624,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
         }
         if (!(mood === "calm" && now < pauseUntil)) desired = Math.sign(target - tx) * speed;
       }
-      if (holdTurkey) desired = 0;
+      if (holdTurkey || now < danceUntil) desired = 0;
       tv += (desired - tv) * Math.min(1, dt * (mood === "loud" ? 10 : 5));
       tx += tv * dt;
       if (tx > range) { tx = range; tv = Math.min(0, tv); }
@@ -866,7 +888,8 @@ input[type=range]{accent-color:var(--gold);width:100%}
     $("fill").style.width = lv + "%";
     $("meter").setAttribute("aria-valuenow", Math.round(lv));
 
-    const loud = !micOff && lv > limit, warn = !micOff && lv > limit * 0.78;
+    const deaf = performance.now() < deafUntil;
+    const loud = !micOff && !deaf && lv > limit, warn = !micOff && !deaf && lv > limit * 0.78;
     if (loud) angryUntil = now + 1500;
     setMood(loud || now < angryUntil ? "loud" : warn ? "warn" : "calm");
 
@@ -908,7 +931,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     $("again").focus();
   }
 
-  $("start").onclick = start;
+  $("start").onclick = () => { unlockSound(); start(); };
   minsInput.addEventListener("keydown", e => { if (e.key === "Enter") start(); });
   $("again").onclick = () => { $("done").hidden = true; $("setup").hidden = false; minsInput.focus(); };
   $("stop").onclick = () => { stopAudio(); $("setup").hidden = false; };
@@ -934,13 +957,97 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const sc = document.querySelector(".score");
     sc.classList.remove("bump"); void sc.offsetWidth; sc.classList.add("bump");
     if (!warned && !micOff) {
-      $("bubble").textContent = earned >= FEATHERS ? "A perfect tail! Thank you!" : GIFT_LINES[Math.floor(Math.random() * GIFT_LINES.length)];
-      lastMsgAt = performance.now();
+      if (earned < FEATHERS) {
+        $("bubble").textContent = GIFT_LINES[Math.floor(Math.random() * GIFT_LINES.length)];
+        lastMsgAt = performance.now();
+      }
     }
   }
   $("give").onclick = giveFeather;
 
   // ---------- Take a feather: the farmer walks up and plucks one out ----------
+  // ---------- Gobble sound ----------
+  // Plays gobble.mp3 if it's next to this page; otherwise a built-in synthesized gobble.
+  let outCtx = null, soundOn = true, deafUntil = 0, nextLoudGobble = 0, danceUntil = 0;
+  try { soundOn = localStorage.getItem("gobble-sound") !== "off"; } catch(e){}
+  const gobbleFile = new Audio("gobble.mp3");
+  let gobbleFileOk = false;
+  gobbleFile.preload = "auto";
+  gobbleFile.addEventListener("canplaythrough", () => { gobbleFileOk = true; });
+  gobbleFile.addEventListener("error", () => { gobbleFileOk = false; });
+
+  function unlockSound(){
+    try {
+      if (!outCtx) outCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (outCtx.state === "suspended") outCtx.resume();
+    } catch(e){}
+  }
+
+  function synthGobble(){
+    if (!outCtx) return 0;
+    const ctx = outCtx, t0 = ctx.currentTime + .02;
+    const osc = ctx.createOscillator(), filt = ctx.createBiquadFilter(), gate = ctx.createGain(), out = ctx.createGain();
+    osc.type = "sawtooth";
+    filt.type = "bandpass"; filt.frequency.value = 1100; filt.Q.value = 1.4;
+    out.gain.value = .55;
+    gate.gain.setValueAtTime(0, t0);
+    // "gobble-gobble": two quick bursts of warbles
+    const pulses = [0, .065, .13, .195, .26, .38, .445, .51, .575, .64, .705];
+    pulses.forEach((p, i) => {
+      const t = t0 + p, f = 620 - i * 22;
+      osc.frequency.setValueAtTime(f * 1.25, t);
+      osc.frequency.exponentialRampToValueAtTime(f * .8, t + .055);
+      gate.gain.setValueAtTime(0, t);
+      gate.gain.linearRampToValueAtTime(1, t + .012);
+      gate.gain.linearRampToValueAtTime(.12, t + .055);
+      gate.gain.linearRampToValueAtTime(0, t + .062);
+    });
+    osc.connect(filt); filt.connect(gate); gate.connect(out); out.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0 + .8);
+    return 800;
+  }
+
+  function playGobble(){
+    if (!soundOn) return;
+    unlockSound();
+    let ms = 0;
+    if (gobbleFileOk) {
+      try {
+        gobbleFile.currentTime = 0;
+        gobbleFile.play().catch(() => synthGobble());
+        ms = (isFinite(gobbleFile.duration) ? gobbleFile.duration : 1.2) * 1000;
+      } catch(e) { ms = synthGobble(); }
+    } else ms = synthGobble();
+    deafUntil = Math.max(deafUntil, performance.now() + ms + 600);
+  }
+
+  function loudGobble(){
+    const now = performance.now();
+    if (now < nextLoudGobble) return;
+    nextLoudGobble = now + 6000;
+    playGobble();
+  }
+
+  function setSound(on){
+    soundOn = on;
+    try { localStorage.setItem("gobble-sound", on ? "on" : "off"); } catch(e){}
+    const b = $("sound");
+    b.textContent = on ? "Sound off" : "Sound on";
+    b.setAttribute("aria-pressed", String(!on));
+  }
+  setSound(soundOn);
+  $("sound").onclick = () => { unlockSound(); setSound(!soundOn); };
+
+  // ---------- Full tail: dance! ----------
+  function celebrate(){
+    say("A PERFECT TAIL! Look at me go!");
+    stickyUntil = performance.now() + 5500;
+    if (reduceMotion.matches) return;
+    danceUntil = performance.now() + 5300;
+    turkeyEl.classList.remove("dance"); void turkeyEl.getBBox(); turkeyEl.classList.add("dance");
+    setTimeout(() => turkeyEl.classList.remove("dance"), 5300);
+  }
+
   const PLUCK_LINES = ["OUCH! My feather!", "Hey! Give that back!", "Not my feather!", "Ow ow ow!"];
   const pluckSvg = $("plucker");
   (() => {
@@ -1037,6 +1144,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
       pk.arm = -115 * Math.min(1, t);
       if (t >= 1 && !pk.plucked) {
         pk.plucked = true;
+        playGobble();
         const i = earned - 1;
         if (i >= 0) {
           const color = COLORS[i % COLORS.length];
