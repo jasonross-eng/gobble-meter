@@ -57,6 +57,7 @@ button{cursor:pointer}
 .top .tabs a[aria-current=page]{background:var(--ink);color:var(--sky)}
 .card .tabs{margin:0 0 1rem}
 .card .tabs a[aria-current=page]{background:var(--ink);color:var(--panel)}
+@media (max-width:640px){.top .tabs{display:none}}
 .display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
 
 .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
@@ -212,8 +213,11 @@ input[type=range]{accent-color:var(--gold);width:100%}
     <div>
       <h1 class="brand display">Gobble Meter</h1>
       <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html" aria-current="page">Gobble Meter</a>
-        <a href="santa.html">Santa Meter</a>
+        <a href="index.html" aria-current="page">Thanksgiving</a>
+        <a href="santa.html">Christmas</a>
+        <a href="mlk.html">MLK Day</a>
+        <a href="washington.html">Presidents’ Day</a>
+        <a href="easter.html">Easter</a>
       </nav>
     </div>
     <div class="clock display" id="clock">
@@ -414,8 +418,11 @@ input[type=range]{accent-color:var(--gold);width:100%}
   <div class="overlay" id="setup">
     <div class="card">
       <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html" aria-current="page">Gobble Meter</a>
-        <a href="santa.html">Santa Meter</a>
+        <a href="index.html" aria-current="page">Thanksgiving</a>
+        <a href="santa.html">Christmas</a>
+        <a href="mlk.html">MLK Day</a>
+        <a href="washington.html">Presidents’ Day</a>
+        <a href="easter.html">Easter</a>
       </nav>
       <h2 class="display">Gobble Meter</h2>
       <p>Stay under the loudness limit to grow the turkey’s tail feathers. If the room gets too loud, a feather falls off.</p>

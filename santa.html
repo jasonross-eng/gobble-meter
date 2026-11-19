@@ -57,6 +57,7 @@ button{cursor:pointer}
 .top .tabs a[aria-current=page]{background:var(--ink);color:var(--sky)}
 .card .tabs{margin:0 0 1rem}
 .card .tabs a[aria-current=page]{background:var(--ink);color:var(--panel)}
+@media (max-width:640px){.top .tabs{display:none}}
 .aur1{animation:aur 14s ease-in-out infinite alternate}
 .aur2{animation:aur 10s ease-in-out infinite alternate-reverse}
 @keyframes aur{from{transform:translateX(-50px)}to{transform:translateX(50px)}}
@@ -220,8 +221,11 @@ input[type=range]{accent-color:var(--gold);width:100%}
     <div>
       <h1 class="brand display">Santa Meter</h1>
       <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html">Gobble Meter</a>
-        <a href="santa.html" aria-current="page">Santa Meter</a>
+        <a href="index.html">Thanksgiving</a>
+        <a href="santa.html" aria-current="page">Christmas</a>
+        <a href="mlk.html">MLK Day</a>
+        <a href="washington.html">Presidents’ Day</a>
+        <a href="easter.html">Easter</a>
       </nav>
     </div>
     <div class="clock display" id="clock">
@@ -525,8 +529,11 @@ input[type=range]{accent-color:var(--gold);width:100%}
   <div class="overlay" id="setup">
     <div class="card">
       <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html">Gobble Meter</a>
-        <a href="santa.html" aria-current="page">Santa Meter</a>
+        <a href="index.html">Thanksgiving</a>
+        <a href="santa.html" aria-current="page">Christmas</a>
+        <a href="mlk.html">MLK Day</a>
+        <a href="washington.html">Presidents’ Day</a>
+        <a href="easter.html">Easter</a>
       </nav>
       <h2 class="display">Santa Meter</h2>
       <p>Stay under the loudness limit to fill Santa’s sack with presents. If the room gets too loud, a present falls out.</p>
