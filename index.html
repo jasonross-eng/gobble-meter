@@ -81,7 +81,9 @@ svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visibl
 .score .n{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:900;line-height:1}
 .score .lbl{font-size:.95rem;color:var(--muted)}
 .next{height:10px;border-radius:999px;background:var(--meter-bg);margin-top:.45rem;overflow:hidden}
-.give{display:block;width:100%;margin-top:.55rem;border:0;border-radius:.7rem;padding:.4rem .6rem;background:var(--pumpkin);color:#FFF8E6;font-size:1rem;font-weight:800}
+.fb-row{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.55rem}
+.take{background:var(--ink)!important;color:var(--panel)!important}
+.give{display:block;width:100%;border:0;border-radius:.7rem;padding:.4rem .6rem;background:var(--pumpkin);color:#FFF8E6;font-size:1rem;font-weight:800}
 .give:hover{filter:brightness(1.1)}
 .give:disabled{opacity:.45;cursor:default;filter:none}
 .score.bump{animation:bump .5s ease-out}
@@ -130,6 +132,11 @@ svg.turkey.loud{--gait:.26s}
 .feather-inner{transform-box:view-box;transform-origin:200px 250px;transform:scale(0);opacity:0;transition:transform .7s cubic-bezier(.3,1.6,.5,1),opacity .2s}
 .feather-inner.on{transform:scale(1);opacity:1}
 .feather-inner.fall{animation:fall 1.5s ease-in forwards}
+.feather-inner.plucked{transition:none;transform:scale(0);opacity:0}
+.plucker{position:absolute;z-index:2;bottom:0;left:0;display:none;overflow:visible;pointer-events:none}
+.flying-feather{position:absolute;z-index:3;left:0;top:0;pointer-events:none;overflow:visible}
+.yelp .tk-all{animation:yelp .7s ease-out!important}
+@keyframes yelp{0%{transform:none}20%{transform:translateY(-46px) rotate(-6deg)}40%{transform:none}55%{transform:translateY(-14px) rotate(4deg)}70%,100%{transform:none}}
 @keyframes fall{0%{transform:scale(1);opacity:1}100%{transform:translate(30px,320px) rotate(70deg) scale(.8);opacity:0}}
 
 .meter-row{position:relative;z-index:2;padding:.8rem clamp(1rem,3vw,2rem) 1rem;background:var(--field2);display:grid;grid-template-columns:1fr auto;gap:.5rem 1.5rem;align-items:center}
@@ -272,13 +279,16 @@ input[type=range]{accent-color:var(--gold);width:100%}
           <rect x="-16" y="-64" width="35" height="6" fill="#1A1416"/>
           <rect x="9" y="-66" width="7" height="9" fill="none" stroke="#E3A12F" stroke-width="2"/>
           <path d="M-12 -99 L16 -99 L21 -90 L-15 -90 Z" fill="#F4EFE3"/>
-          <g transform="translate(22 -58) rotate(-125)">
+          <g id="pilFork"><g transform="translate(22 -58) rotate(-125)">
             <line x1="0" y1="0" x2="98" y2="0" stroke="#9C7A30" stroke-width="4"/>
             <path d="M98 -9 V9 M98 -8 H118 M98 0 H120 M98 8 H118" fill="none" stroke="#7E8C99" stroke-width="3" stroke-linecap="round"/>
           </g>
+          </g>
+          <g id="pilArm">
           <line x1="2" y1="-92" x2="13" y2="-68" stroke="#3B2314" stroke-width="11" stroke-linecap="round"/>
           <line x1="2" y1="-92" x2="13" y2="-68" stroke="#2F2A2E" stroke-width="7" stroke-linecap="round"/>
-          <circle cx="15" cy="-64" r="5" fill="#F1C9A0"/>
+          <circle id="pilHand" cx="15" cy="-64" r="5" fill="#F1C9A0"/>
+          </g>
           <circle cx="0" cy="-112" r="13" fill="#6B4322"/>
           <circle cx="3" cy="-110" r="11" fill="#F1C9A0"/>
           <circle cx="9" cy="-113" r="1.6" fill="#3B2314" stroke="none"/>
@@ -312,12 +322,16 @@ input[type=range]{accent-color:var(--gold);width:100%}
       <use href="#pumpkin" transform="translate(1010 545) scale(1.25)"/>
       </g>
     </svg>
+    <svg class="plucker" id="plucker" viewBox="-75 -165 150 172" aria-hidden="true"></svg>
     <div class="bubble display" id="bubble">Nice and quiet!</div>
     <div class="score">
       <div class="n display"><span id="count">0</span> / 10</div>
       <div class="lbl">tail feathers</div>
       <div class="next" title="Next feather"><i id="nextBar"></i></div>
-      <button class="give display" id="give" type="button" title="Give a feather for good behavior (shortcut: F)">+ Give a feather</button>
+      <div class="fb-row">
+        <button class="give display" id="give" type="button" title="Give a feather for good behavior (shortcut: F)">+ Give</button>
+        <button class="give take display" id="take" type="button" title="The farmer comes and plucks a feather (shortcut: T)">− Take</button>
+      </div>
     </div>
     <div class="turkey-wrap">
       <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="Turkey whose tail feathers grow as the class stays quiet">
@@ -515,12 +529,12 @@ input[type=range]{accent-color:var(--gold);width:100%}
     return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
   }
 
-  function updateCount(){ $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; }
+  function updateCount(){ $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; $("take").disabled = earned <= 0; }
 
   function gain(){
     if (earned >= FEATHERS) return;
     const f = feathers[earned];
-    f.classList.remove("fall");
+    f.classList.remove("fall", "plucked");
     void f.getBBox();
     f.classList.add("on");
     earned++; updateCount();
@@ -540,7 +554,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     loud: ["Too loud! My feathers!", "GOBBLE GOBBLE!!", "Who’s making that racket?!", "My poor feathers!"]
   };
   const MSG_EVERY = {calm: 6000, warn: 3500, loud: 2000};
-  let mood = "calm", lastMsgAt = 0, angryUntil = 0, micOff = false;
+  let mood = "calm", lastMsgAt = 0, angryUntil = 0, micOff = false, stickyUntil = 0;
 
   let lastMood = "";
   function setMood(m){
@@ -549,12 +563,13 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const t = $("turkey"), meter = $("meter");
     t.classList.remove("calm","warn","loud"); t.classList.add(m);
     meter.classList.remove("warn","loud"); if (m !== "calm") meter.classList.add(m);
-    if (!warned && !micOff) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
+    if (!warned && !micOff && performance.now() > stickyUntil) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
   }
 
   // Turkey movement: struts around when calm, paces when warn, runs around angrily when loud.
   const turkeyEl = $("turkey"), stageEl = document.querySelector(".stage"), bubbleEl = $("bubble");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let holdTurkey = false, holdFace = 1;
   let tx = 0, tv = 0, target = 0, facing = 1, pauseUntil = 0, retargetAt = 0, motionLast = performance.now();
 
   function pickTarget(range){
@@ -587,11 +602,13 @@ input[type=range]{accent-color:var(--gold);width:100%}
         }
         if (!(mood === "calm" && now < pauseUntil)) desired = Math.sign(target - tx) * speed;
       }
+      if (holdTurkey) desired = 0;
       tv += (desired - tv) * Math.min(1, dt * (mood === "loud" ? 10 : 5));
       tx += tv * dt;
       if (tx > range) { tx = range; tv = Math.min(0, tv); }
       if (tx < -range) { tx = -range; tv = Math.max(0, tv); }
-      if (Math.abs(tv) > 4) facing = tv > 0 ? 1 : -1;
+      if (holdTurkey) facing = holdFace;
+      else if (Math.abs(tv) > 4) facing = tv > 0 ? 1 : -1;
       moving = Math.abs(tv) > W * 0.01 || mood === "loud";
     }
     turkeyEl.classList.toggle("moving", moving);
@@ -604,7 +621,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const bx = Math.max(-bLim, Math.min(bLim, tx));
     bubbleEl.style.left = `calc(50% + ${bx.toFixed(1)}px)`;
 
-    if (!warned && !micOff && now - lastMsgAt > MSG_EVERY[mood]) {
+    if (!warned && !micOff && now > stickyUntil && now - lastMsgAt > MSG_EVERY[mood]) {
       const list = LINES[mood];
       let next = list[Math.floor(Math.random() * list.length)];
       if (next === bubbleEl.textContent) next = list[(list.indexOf(next) + 1) % list.length];
@@ -688,7 +705,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
   }
   window.gobblePilgrim = startPilgrim; // handy for trying it out from the console
   function walkPilgrim(now, dt){
-    if (!pil && now > nextPilAt && !reduceMotion.matches) startPilgrim();
+    if (!pil && now > nextPilAt && !reduceMotion.matches && !pk) startPilgrim();
     if (!pil) return;
     pil.x += pil.dir * pil.speed * dt;
     pil.ph += dt * pil.speed / 9;
@@ -922,10 +939,160 @@ input[type=range]{accent-color:var(--gold);width:100%}
     }
   }
   $("give").onclick = giveFeather;
+
+  // ---------- Take a feather: the farmer walks up and plucks one out ----------
+  const PLUCK_LINES = ["OUCH! My feather!", "Hey! Give that back!", "Not my feather!", "Ow ow ow!"];
+  const pluckSvg = $("plucker");
+  (() => {
+    const clone = $("pilgrim").cloneNode(true);
+    clone.removeAttribute("style");
+    clone.querySelectorAll("[id]").forEach(n => n.id = "pk" + n.id.slice(3));
+    clone.id = "pkRoot";
+    pluckSvg.appendChild(clone);
+    // a feather he can carry off
+    const held = document.createElementNS(ns, "g");
+    held.id = "pkHeld"; held.style.display = "none";
+    held.innerHTML = '<ellipse cx="15" cy="-98" rx="8" ry="30" stroke="#3B2314" stroke-width="2.5"/>' +
+                     '<line x1="15" y1="-122" x2="15" y2="-66" stroke="#3B2314" stroke-width="1.5" opacity=".5"/>';
+    $("pkArm").insertBefore(held, $("pkHand"));
+    $("pkFork").style.display = "none";
+  })();
+  const pkRoot = $("pkRoot"), pkBody = $("pkBody"), pkLegA = $("pkLegA"), pkLegB = $("pkLegB"), pkArm = $("pkArm"), pkHand = $("pkHand"), pkHeld = $("pkHeld"), pkHat = $("pkHat");
+  let pk = null, pendingPlucks = 0, pkLast = 0;
+
+  function say(text){ if (!warned) { $("bubble").textContent = text; lastMsgAt = performance.now(); stickyUntil = lastMsgAt + 2500; } }
+
+  function pluckOne(){
+    if (earned <= 0) return null;
+    earned--;
+    const f = feathers[earned];
+    f.classList.remove("on", "fall");
+    f.classList.add("plucked");
+    updateCount();
+    return f;
+  }
+
+  function takeFeather(){
+    if (earned - pendingPlucks <= 0) return;
+    if (reduceMotion.matches) { pluckOne(); say(PLUCK_LINES[0]); return; }
+    pendingPlucks++;
+    if (!pk) startPluck();
+  }
+
+  function startPluck(){
+    // Send the background walker home; it's the same farmer.
+    if (pil) { pil = null; pilEl.style.display = "none"; nextPilAt = performance.now() + 60000; }
+    const i = Math.max(0, earned - 1);
+    const side = i < FEATHERS / 2 ? -1 : 1;           // come from the side the feather is on
+    const W = stageEl.clientWidth;
+    pk = {phase: "enter", side, x: side * (W / 2 + 140), ph: 0, t0: 0, plucked: false, arm: 0};
+    holdTurkey = true; holdFace = side;
+    pluckSvg.style.display = "block";
+    pkHeld.style.display = "none";
+    say("Uh oh… here comes the farmer!");
+    pkLast = performance.now();
+    requestAnimationFrame(pluckLoop);
+  }
+
+  function flyFeather(f, fromSvgEl, toEl, toPoint, color){
+    const sr = stageEl.getBoundingClientRect();
+    const a = new DOMPoint(200, 108).matrixTransform(fromSvgEl.getScreenCTM());
+    const b = new DOMPoint(toPoint[0], toPoint[1]).matrixTransform(toEl.getScreenCTM());
+    const k = turkeyEl.getBoundingClientRect().height / 360;
+    const el = document.createElementNS(ns, "svg");
+    el.setAttribute("class", "flying-feather");
+    el.setAttribute("width", 60 * k); el.setAttribute("height", 190 * k);
+    el.setAttribute("viewBox", "-30 -95 60 190");
+    el.innerHTML = `<ellipse cx="0" cy="0" rx="25" ry="90" fill="${color}" stroke="#3B2314" stroke-width="4"/>` +
+                   `<line x1="0" y1="-68" x2="0" y2="82" stroke="#3B2314" stroke-width="2.5" opacity=".5"/>`;
+    stageEl.appendChild(el);
+    const off = (x, y) => `translate(${x - sr.left - 30 * k}px, ${y - sr.top - 95 * k}px)`;
+    const angle = f.parentNode.transform.baseVal[0] ? f.parentNode.transform.baseVal[0].angle : 0;
+    const anim = el.animate([
+      {transform: `${off(a.x, a.y)} rotate(${angle}deg) scale(1)`},
+      {transform: `${off((a.x + b.x) / 2, Math.min(a.y, b.y) - 60 * k)} rotate(${angle / 2 - 20}deg) scale(.7)`, offset: .45},
+      {transform: `${off(b.x, b.y)} rotate(0deg) scale(.38)`}
+    ], {duration: 450, easing: "ease-in-out", fill: "forwards"});
+    anim.onfinish = () => el.remove();
+  }
+
+  function pluckLoop(now){
+    if (!pk) return;
+    const dt = Math.min(.1, (now - pkLast) / 1000); pkLast = now;
+    const W = stageEl.clientWidth, H = stageEl.clientHeight;
+    const k = turkeyEl.getBoundingClientRect().height / 360;   // turkey units -> px
+    const s = k * 1.5;                                          // farmer units -> px (about turkey-sized)
+    const standX = tx + pk.side * 150 * k;
+    const speed = Math.max(220, W * .3);
+    let walking = false, facing = -pk.side;
+
+    if (pk.phase === "enter") {
+      walking = true;
+      const d = standX - pk.x;
+      if (Math.abs(d) < speed * dt + 2) { pk.x = standX; pk.phase = "reach"; pk.t0 = now; pk.plucked = false; }
+      else pk.x += Math.sign(d) * speed * dt;
+    } else if (pk.phase === "reach") {
+      pk.x = standX;
+      const t = (now - pk.t0) / 350;
+      pk.arm = -115 * Math.min(1, t);
+      if (t >= 1 && !pk.plucked) {
+        pk.plucked = true;
+        const i = earned - 1;
+        if (i >= 0) {
+          const color = COLORS[i % COLORS.length];
+          pkArm.setAttribute("transform", `rotate(${pk.arm} 2 -92)`);
+          flyFeather(feathers[i], feathers[i], pkHand, [15, -64], color);
+          pluckOne();
+          pkHeld.setAttribute("fill", color);
+          setTimeout(() => { if (pk) pkHeld.style.display = ""; }, 420);
+          say(PLUCK_LINES[Math.floor(Math.random() * PLUCK_LINES.length)]);
+          turkeyEl.classList.remove("yelp"); void turkeyEl.getBBox(); turkeyEl.classList.add("yelp");
+          setTimeout(() => turkeyEl.classList.remove("yelp"), 750);
+        }
+        pendingPlucks = Math.max(0, pendingPlucks - 1);
+        pk.phase = "hold"; pk.t0 = now;
+      }
+    } else if (pk.phase === "hold") {
+      pk.x = standX;
+      const t = now - pk.t0;
+      if (t > 450) pk.arm = -115 * Math.max(0, 1 - (t - 450) / 400);
+      if (t > 1100) {
+        if (pendingPlucks > 0 && earned > 0) { pk.phase = "reach"; pk.t0 = now; pk.plucked = false; }
+        else { pendingPlucks = 0; pk.phase = "leave"; holdTurkey = false; }
+      }
+    } else if (pk.phase === "leave") {
+      walking = true; facing = pk.side;
+      pk.x += pk.side * speed * dt;
+      if (Math.abs(pk.x) > W / 2 + 160) {
+        pk = null; pluckSvg.style.display = "none";
+        if (pendingPlucks > 0 && earned > 0) startPluck(); else pendingPlucks = 0;
+        return;
+      }
+    }
+
+    if (walking) pk.ph += dt * 9; else pk.ph = 0;
+    const sw = Math.sin(pk.ph) * 24, bob = walking ? -Math.abs(Math.cos(pk.ph)) * 3 : 0;
+    pkLegA.setAttribute("transform", `rotate(${sw.toFixed(1)} 0 -50)`);
+    pkLegB.setAttribute("transform", `rotate(${(-sw).toFixed(1)} 0 -50)`);
+    pkBody.setAttribute("transform", `translate(0 ${bob.toFixed(1)})`);
+    pkArm.setAttribute("transform", `rotate(${pk.arm.toFixed(1)} 2 -92)`);
+    pkHeld.setAttribute("transform", `rotate(${(-pk.arm).toFixed(1)} 15 -64)`); // keep the feather upright in his hand
+    pkHat.removeAttribute("transform");
+    pkRoot.setAttribute("transform", `scale(${facing} 1)`);
+    pluckSvg.style.width = (150 * s) + "px";
+    pluckSvg.style.height = (172 * s) + "px";
+    pluckSvg.style.left = (W / 2 + pk.x - 75 * s) + "px";
+    pluckSvg.style.bottom = Math.max(0, 22 * k - 7 * s) + "px";
+    requestAnimationFrame(pluckLoop);
+  }
+  $("take").onclick = takeFeather;
   document.addEventListener("keydown", e => {
     if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey &&
         !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) &&
         $("setup").hidden && $("done").hidden) giveFeather();
+    if ((e.key === "t" || e.key === "T") && !e.ctrlKey && !e.metaKey && !e.altKey &&
+        !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) &&
+        $("setup").hidden && $("done").hidden) takeFeather();
   });
   $("pause").onclick = () => {
     if (pausedLeft === null) { pausedLeft = Math.max(0, endTime - Date.now()); $("pause").textContent = "Resume"; $("timeSub").textContent = "paused"; }
