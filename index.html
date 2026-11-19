@@ -128,6 +128,8 @@ svg.turkey.loud{--gait:.26s}
 .meter .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--sage);transition:background .2s}
 .meter.warn .fill{background:var(--gold)}
 .meter.loud .fill{background:var(--cranberry)}
+.meter.off{opacity:.45}
+.tool[aria-pressed=true]{background:var(--cranberry);border-color:var(--cranberry);color:#FFF8E6}
 .meter .limit{position:absolute;top:-3px;bottom:-3px;width:5px;background:var(--ink);transform:translateX(-50%)}
 .meter-labels{display:flex;justify-content:space-between;color:#FFF8E6;font-weight:700;font-size:.95rem;grid-column:1}
 .limit-ctl{grid-row:1 / span 2;grid-column:2;color:#FFF8E6;font-weight:700;display:flex;flex-direction:column;gap:.2rem;font-size:.95rem;min-width:11rem}
@@ -174,6 +176,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
         <button class="tool" id="minus">−1 min</button>
         <button class="tool" id="plus">+1 min</button>
         <button class="tool" id="pause">Pause</button>
+        <button class="tool" id="mic" aria-pressed="false">Mic off</button>
         <button class="tool" id="full">Full screen</button>
         <button class="tool" id="stop">End</button>
       </div>
@@ -425,7 +428,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     $("pause").textContent = "Pause";
     $("timeSub").textContent = "left in class";
     $("setup").hidden = true; $("done").hidden = true;
-    heard = false; warned = false; startedAt = Date.now(); lastMood = "";
+    heard = false; warned = false; startedAt = Date.now(); lastMood = ""; setMic(false);
     running = true; lastFrame = performance.now();
     requestAnimationFrame(loop);
   }
@@ -478,7 +481,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     loud: ["Too loud! My feathers!", "GOBBLE GOBBLE!!", "Who’s making that racket?!", "My poor feathers!"]
   };
   const MSG_EVERY = {calm: 6000, warn: 3500, loud: 2000};
-  let mood = "calm", lastMsgAt = 0, angryUntil = 0;
+  let mood = "calm", lastMsgAt = 0, angryUntil = 0, micOff = false;
 
   let lastMood = "";
   function setMood(m){
@@ -487,7 +490,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const t = $("turkey"), meter = $("meter");
     t.classList.remove("calm","warn","loud"); t.classList.add(m);
     meter.classList.remove("warn","loud"); if (m !== "calm") meter.classList.add(m);
-    if (!warned) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
+    if (!warned && !micOff) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
   }
 
   // Turkey movement: struts around when calm, paces when warn, runs around angrily when loud.
@@ -542,7 +545,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     const bx = Math.max(-bLim, Math.min(bLim, tx));
     bubbleEl.style.left = `calc(50% + ${bx.toFixed(1)}px)`;
 
-    if (!warned && now - lastMsgAt > MSG_EVERY[mood]) {
+    if (!warned && !micOff && now - lastMsgAt > MSG_EVERY[mood]) {
       const list = LINES[mood];
       let next = list[Math.floor(Math.random() * list.length)];
       if (next === bubbleEl.textContent) next = list[(list.indexOf(next) + 1) % list.length];
@@ -557,19 +560,20 @@ input[type=range]{accent-color:var(--gold);width:100%}
     if (!running) return;
     const dt = Math.min(250, now - lastFrame); lastFrame = now;
     if (audioCtx.state === "suspended") audioCtx.resume();
-    const lv = readLevel();
+    const lv = micOff ? (level = 0) : readLevel();
     const track = stream && stream.getAudioTracks()[0];
-    const silent = !heard || (track && track.muted);
+    const silent = !micOff && (!heard || (track && track.muted));
     if (silent && !warned && Date.now() - startedAt > 4000) {
       warned = true;
       $("bubble").textContent = "I can’t hear anything! Check the mic.";
     } else if (!silent && warned) {
       warned = false; lastMood = "";
+      if (micOff) $("bubble").textContent = "Mic is off. Break time!";
     }
     $("fill").style.width = lv + "%";
     $("meter").setAttribute("aria-valuenow", Math.round(lv));
 
-    const loud = lv > limit, warn = lv > limit * 0.78;
+    const loud = !micOff && lv > limit, warn = !micOff && lv > limit * 0.78;
     if (loud) angryUntil = now + 1500;
     setMood(loud || now < angryUntil ? "loud" : warn ? "warn" : "calm");
 
@@ -578,7 +582,9 @@ input[type=range]{accent-color:var(--gold);width:100%}
     $("clock").classList.toggle("urgent", left <= 60000);
 
     if (pausedLeft === null) {
-      if (loud) {
+      if (micOff) {
+        // Mic paused: the clock keeps running, but feathers are frozen.
+      } else if (loud) {
         loudMs += dt;
         if (loudMs > 1200 && Date.now() - lastLoss > 4000) {
           lose(); lastLoss = Date.now(); loudMs = 0;
@@ -613,6 +619,19 @@ input[type=range]{accent-color:var(--gold);width:100%}
   minsInput.addEventListener("keydown", e => { if (e.key === "Enter") start(); });
   $("again").onclick = () => { $("done").hidden = true; $("setup").hidden = false; minsInput.focus(); };
   $("stop").onclick = () => { stopAudio(); $("setup").hidden = false; };
+  function setMic(off){
+    micOff = off;
+    const track = stream && stream.getAudioTracks()[0];
+    if (track) track.enabled = !off;
+    const b = $("mic");
+    b.textContent = off ? "Mic on" : "Mic off";
+    b.setAttribute("aria-pressed", String(off));
+    $("meter").classList.toggle("off", off);
+    $("fill").style.width = "0%";
+    if (off) { angryUntil = 0; warned = false; setMood("calm"); $("bubble").textContent = "Mic is off. Break time!"; }
+    else { heard = false; startedAt = Date.now(); lastMood = ""; lastMsgAt = 0; }
+  }
+  $("mic").onclick = () => setMic(!micOff);
   $("pause").onclick = () => {
     if (pausedLeft === null) { pausedLeft = Math.max(0, endTime - Date.now()); $("pause").textContent = "Resume"; $("timeSub").textContent = "paused"; }
     else { endTime = Date.now() + pausedLeft; pausedLeft = null; $("pause").textContent = "Pause"; $("timeSub").textContent = "left in class"; }
