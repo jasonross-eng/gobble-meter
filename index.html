@@ -57,7 +57,12 @@ button{cursor:pointer}
 .top .tabs a[aria-current=page]{background:var(--ink);color:var(--sky)}
 .card .tabs{margin:0 0 1rem}
 .card .tabs a[aria-current=page]{background:var(--ink);color:var(--panel)}
-@media (max-width:640px){.top .tabs{display:none}}
+.meter-pick{position:relative;display:inline-block;margin-top:.5rem}
+.meter-pick select{appearance:none;-webkit-appearance:none;font:inherit;font-weight:700;font-size:.95rem;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:999px;padding:.25rem 2.1rem .25rem .9rem;cursor:pointer}
+.meter-pick::after{content:"";position:absolute;right:.85rem;top:50%;width:.45rem;height:.45rem;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.meter-pick select option{color:#222;background:#fff}
+.card .meter-pick{margin:0 0 1rem}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
 
 .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
@@ -212,13 +217,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
   <header class="top">
     <div>
       <h1 class="brand display">Gobble Meter</h1>
-      <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html" aria-current="page">Thanksgiving</a>
-        <a href="santa.html">Christmas</a>
-        <a href="mlk.html">MLK Day</a>
-        <a href="washington.html">Presidents’ Day</a>
-        <a href="easter.html">Easter</a>
-      </nav>
+      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
+        <select onchange="location.href=this.value">
+          <option value="index.html" selected>Thanksgiving</option>
+          <option value="santa.html">Christmas</option>
+          <option value="mlk.html">MLK Day</option>
+          <option value="washington.html">Presidents’ Day</option>
+          <option value="easter.html">Easter</option>
+        </select>
+      </label>
     </div>
     <div class="clock display" id="clock">
       <div class="time" id="time">--:--</div>
@@ -417,13 +424,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   <div class="overlay" id="setup">
     <div class="card">
-      <nav class="tabs" aria-label="Choose a meter">
-        <a href="index.html" aria-current="page">Thanksgiving</a>
-        <a href="santa.html">Christmas</a>
-        <a href="mlk.html">MLK Day</a>
-        <a href="washington.html">Presidents’ Day</a>
-        <a href="easter.html">Easter</a>
-      </nav>
+      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
+        <select onchange="location.href=this.value">
+          <option value="index.html" selected>Thanksgiving</option>
+          <option value="santa.html">Christmas</option>
+          <option value="mlk.html">MLK Day</option>
+          <option value="washington.html">Presidents’ Day</option>
+          <option value="easter.html">Easter</option>
+        </select>
+      </label>
       <h2 class="display">Gobble Meter</h2>
       <p>Stay under the loudness limit to grow the turkey’s tail feathers. If the room gets too loud, a feather falls off.</p>
       <label class="q" for="minsInput">How many minutes are left in class?</label>
