@@ -47,10 +47,14 @@ body{
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--cranberry);outline-offset:3px}
+.weather{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.app.sky-dark .top{--ink:#F7EAD0;--muted:#E6D6BA;--sky:#2A2342}
+.app.sky-light .top{--ink:#3B2314;--muted:#6E5644;--sky:#F8E9B8}
+.top{color:var(--ink);transition:color 1s}
 .display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
 
 .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
-.top{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem clamp(1rem,3vw,2rem) 0}
+.top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem clamp(1rem,3vw,2rem) 0}
 .brand{font-size:clamp(1.4rem,3vw,2.1rem);font-weight:900;margin:0;line-height:1}
 .clock{text-align:right}
 .clock .time{font-size:clamp(2.4rem,7vw,4.6rem);font-weight:900;line-height:.95;font-variant-numeric:tabular-nums}
@@ -123,7 +127,7 @@ svg.turkey.loud{--gait:.26s}
 .feather-inner.fall{animation:fall 1.5s ease-in forwards}
 @keyframes fall{0%{transform:scale(1);opacity:1}100%{transform:translate(30px,320px) rotate(70deg) scale(.8);opacity:0}}
 
-.meter-row{padding:.8rem clamp(1rem,3vw,2rem) 1rem;background:var(--field2);display:grid;grid-template-columns:1fr auto;gap:.5rem 1.5rem;align-items:center}
+.meter-row{position:relative;z-index:2;padding:.8rem clamp(1rem,3vw,2rem) 1rem;background:var(--field2);display:grid;grid-template-columns:1fr auto;gap:.5rem 1.5rem;align-items:center}
 .meter{position:relative;height:clamp(28px,4.5vh,44px);border-radius:999px;background:var(--meter-bg);border:3px solid var(--ink);overflow:hidden}
 .meter .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--sage);transition:background .2s}
 .meter.warn .fill{background:var(--gold)}
@@ -183,6 +187,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     </div>
   </header>
 
+  <canvas class="weather" id="weather" aria-hidden="true"></canvas>
   <main class="stage">
     <svg class="farm" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <defs>
@@ -205,11 +210,19 @@ input[type=range]{accent-color:var(--gold);width:100%}
         </g>
       </defs>
 
-      <circle cx="960" cy="115" r="58" fill="var(--sun)"/>
-      <g fill="var(--cloud)">
+      <filter id="tod" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feColorMatrix id="todMatrix" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+      </filter>
+      <g id="stars" fill="#FFF6DD" opacity="0"></g>
+      <g id="moon" opacity="0">
+        <path d="M0 -40 A40 40 0 1 0 0 40 A30 40 0 1 1 0 -40 Z" fill="#F4EBC8" stroke="#3B2314" stroke-width="3"/>
+      </g>
+      <circle id="sun" cx="960" cy="115" r="58" fill="var(--sun)"/>
+      <g id="clouds" fill="var(--cloud)">
         <ellipse cx="250" cy="120" rx="70" ry="22"/><ellipse cx="285" cy="104" rx="40" ry="24"/><ellipse cx="225" cy="108" rx="30" ry="18"/>
         <ellipse cx="660" cy="80" rx="60" ry="18"/><ellipse cx="690" cy="66" rx="34" ry="20"/>
       </g>
+      <g id="land" filter="url(#tod)">
       <path d="M0 395 Q200 315 420 375 T850 355 T1200 365 V600 H0 Z" fill="var(--hill1)"/>
       <path d="M0 440 Q300 385 600 425 T1200 415 V600 H0 Z" fill="var(--hill2)"/>
 
@@ -253,6 +266,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
       <use href="#pumpkin" transform="translate(780 530) scale(1.1)"/>
       <use href="#pumpkin" transform="translate(838 556) scale(.8)"/>
       <use href="#pumpkin" transform="translate(1010 545) scale(1.25)"/>
+      </g>
     </svg>
     <div class="bubble display" id="bubble">Nice and quiet!</div>
     <div class="score">
@@ -555,6 +569,196 @@ input[type=range]{accent-color:var(--gold);width:100%}
     requestAnimationFrame(motion);
   }
   requestAnimationFrame(motion);
+
+  // ---------- Time of day: dawn -> day -> sunset -> night, looping slowly ----------
+  const DAY_MS = 8 * 60 * 1000;
+  const SKY = [ // t (0 = sunrise), sky top, sky bottom, land tint, tint strength, stars, clouds
+    [0.00, "#9DB4E0", "#F6C29A", "#6F7FB8", .18, .15, .8],
+    [0.08, "#F8E9B8", "#F1C57A", "#000000", 0,   0,   1],
+    [0.50, "#F8E9B8", "#F1C57A", "#000000", 0,   0,   1],
+    [0.58, "#7B5A8C", "#F08A4B", "#8A3E5C", .25, .1,  .7],
+    [0.66, "#141432", "#2E2A55", "#141A45", .5,  1,   .25],
+    [0.92, "#141432", "#2E2A55", "#141A45", .5,  1,   .25],
+    [1.00, "#9DB4E0", "#F6C29A", "#6F7FB8", .18, .15, .8]
+  ];
+  const hex = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+  const css = c => `rgb(${c.map(Math.round).join(",")})`;
+  const STORM = hex("#6E7480");
+  const appEl = $("app"), sunEl = $("sun"), moonEl = $("moon"), starsEl = $("stars"), cloudsEl = $("clouds"), todEl = $("todMatrix");
+  for (let i = 0; i < 45; i++) {
+    const c = document.createElementNS(ns, "circle");
+    c.setAttribute("cx", (Math.random() * 1200).toFixed(0));
+    c.setAttribute("cy", (10 + Math.random() * 280).toFixed(0));
+    c.setAttribute("r", (1 + Math.random() * 2).toFixed(1));
+    starsEl.appendChild(c);
+  }
+  const dayStart = performance.now() - 0.12 * DAY_MS; // open in the morning
+  let rainAmt = 0;
+
+  function paintSky(now){
+    const t = ((now - dayStart) % DAY_MS) / DAY_MS;
+    let k = 0; while (k < SKY.length - 2 && t > SKY[k + 1][0]) k++;
+    const A = SKY[k], B = SKY[k + 1], f = (t - A[0]) / (B[0] - A[0] || 1);
+    const r = rainAmt;
+    let top = mix(hex(A[1]), hex(B[1]), f), bot = mix(hex(A[2]), hex(B[2]), f);
+    top = mix(top, STORM, r * .55); bot = mix(bot, STORM, r * .45);
+    document.body.style.background = `linear-gradient(180deg, ${css(top)} 0%, ${css(bot)} 70%)`;
+    const tintA = A[4] + (B[4] - A[4]) * f, tint = mix(hex(A[3]), hex(B[3]), f);
+    // Blend the land toward the tint color, plus a gray wash when it rains
+    let tc = tint.map(v => v / 255), ta = tintA;
+    if (r > 0) { tc = tc.map((v, i) => (v * ta + (STORM[i] / 255) * r * .25) / (ta + r * .25)); ta = Math.min(.7, ta + r * .25); }
+    const g = (1 - ta).toFixed(3);
+    todEl.setAttribute("values", `${g} 0 0 0 ${(tc[0] * ta).toFixed(3)}  0 ${g} 0 0 ${(tc[1] * ta).toFixed(3)}  0 0 ${g} 0 ${(tc[2] * ta).toFixed(3)}  0 0 0 1 0`);
+    starsEl.setAttribute("opacity", ((A[5] + (B[5] - A[5]) * f) * (1 - r)).toFixed(2));
+    cloudsEl.setAttribute("opacity", ((A[6] + (B[6] - A[6]) * f) * (1 - r * .6)).toFixed(2));
+    // Sun arcs across during the day; moon at night. Both sink behind the hills.
+    const su = (t + 0.03) / 0.66;
+    if (su >= 0 && su <= 1) {
+      sunEl.setAttribute("cx", (60 + su * 1080).toFixed(1));
+      sunEl.setAttribute("cy", (420 - Math.sin(Math.PI * su) * 320).toFixed(1));
+      sunEl.setAttribute("opacity", (1 - r * .7).toFixed(2));
+    } else sunEl.setAttribute("opacity", "0");
+    const mu = ((t - 0.6 + 1) % 1) / 0.44;
+    if (mu <= 1) {
+      moonEl.setAttribute("transform", `translate(${(80 + mu * 1040).toFixed(1)} ${(420 - Math.sin(Math.PI * mu) * 320).toFixed(1)})`);
+      moonEl.setAttribute("opacity", (1 - r * .7).toFixed(2));
+    } else moonEl.setAttribute("opacity", "0");
+    const lum = (.299 * top[0] + .587 * top[1] + .114 * top[2]) / 255;
+    appEl.classList.toggle("sky-dark", lum < .5);
+    appEl.classList.toggle("sky-light", lum >= .5);
+  }
+
+  // ---------- Weather: every so often, a gust of leaves or a rain shower ----------
+  const cv = $("weather"), ctx = cv.getContext("2d");
+  const LEAF_COLORS = ["#C8452B", "#D8662A", "#E3A12F", "#A3283F", "#B5762E"];
+  let leaves = [], drops = [], splashes = [];
+  let event = null, nextEventAt = performance.now() + 20000 + Math.random() * 25000;
+  let lastSky = 0, wLast = performance.now(), dpr = 1, groundTop = 0, groundBot = 0;
+
+  function sizeCanvas(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = appEl.clientWidth, h = appEl.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    // Where the field is: the farm picture is anchored to the bottom of the stage.
+    const sr = stageEl.getBoundingClientRect(), ar = appEl.getBoundingClientRect();
+    const scale = Math.max(sr.width / 1200, sr.height / 600);
+    groundBot = sr.bottom - ar.top;
+    groundTop = groundBot - (600 - 465) * scale;
+  }
+
+  function startEvent(now, type){
+    const rain = type ? type === "rain" : Math.random() < 0.45;
+    const dur = rain ? 20000 + Math.random() * 15000 : 9000 + Math.random() * 7000;
+    event = {type: rain ? "rain" : "leaves", start: now, end: now + dur, wind: 40 + Math.random() * 80, spawnAcc: 0};
+  }
+  window.gobbleWeather = type => startEvent(performance.now(), type); // handy for trying it out from the console
+
+  function spawnLeaf(W, wind){
+    leaves.push({
+      x: -0.15 * W + Math.random() * W * 1.05, y: -20 - Math.random() * 40,
+      vy: 45 + Math.random() * 45, wind, sway: 25 + Math.random() * 35, ph: Math.random() * 6.28,
+      rot: Math.random() * 6.28, vrot: (Math.random() - .5) * 4, flip: Math.random() * 6.28,
+      size: 9 + Math.random() * 8, color: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+      land: groundTop + Math.random() * (groundBot - groundTop - 10), landedAt: 0
+    });
+  }
+
+  function drawLeaf(L, alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(L.x, L.y); ctx.rotate(L.rot);
+    ctx.scale(1, L.landedAt ? .55 : Math.max(.25, Math.abs(Math.cos(L.flip))));
+    const s = L.size;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.quadraticCurveTo(s * .9, -s * .2, 0, s);
+    ctx.quadraticCurveTo(-s * .9, -s * .2, 0, -s);
+    ctx.fillStyle = L.color; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "#3B2314"; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -s * .8); ctx.lineTo(0, s * 1.35); ctx.stroke();
+    ctx.restore();
+  }
+
+  function weather(now){
+    const dt = Math.min(.1, (now - wLast) / 1000); wLast = now;
+    sizeCanvas();
+    const W = cv.width / dpr, H = cv.height / dpr;
+    const still = reduceMotion.matches;
+
+    if (!event && now > nextEventAt) startEvent(now);
+    let rainTarget = 0;
+    if (event) {
+      const fadeIn = Math.min(1, (now - event.start) / 3000), fadeOut = Math.min(1, (event.end - now) / 3000);
+      const strength = Math.max(0, Math.min(fadeIn, fadeOut));
+      if (event.type === "rain") rainTarget = strength;
+      else if (!still) {
+        event.spawnAcc += dt * 3.5 * strength * (W / 1200 + .4);
+        while (event.spawnAcc >= 1) { event.spawnAcc--; spawnLeaf(W, event.wind); }
+      }
+      if (now > event.end) { event = null; nextEventAt = now + 40000 + Math.random() * 80000; }
+    }
+    rainAmt += (rainTarget - rainAmt) * Math.min(1, dt * 1.5);
+    if (rainAmt < .002) rainAmt = 0;
+
+    if (now - lastSky > 200) { paintSky(now); lastSky = now; }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (!still) {
+      // Leaves drift down, swaying, then rest on the field and fade away.
+      leaves = leaves.filter(L => {
+        if (!L.landedAt) {
+          L.ph += dt * 2.2; L.flip += dt * 3;
+          L.x += (L.wind + Math.sin(L.ph) * L.sway) * dt;
+          L.y += L.vy * dt; L.rot += L.vrot * dt;
+          if (L.y >= L.land) { L.y = L.land; L.landedAt = now; }
+        }
+        const age = L.landedAt ? (now - L.landedAt) / 1000 : 0;
+        const alpha = age < 3 ? 1 : Math.max(0, 1 - (age - 3) / 3);
+        if (alpha <= 0 || L.x > W + 40) return false;
+        drawLeaf(L, alpha);
+        return true;
+      });
+
+      // Rain: gray clouds roll in across the top of the screen, then the drops
+      if (rainAmt > 0) {
+        ctx.fillStyle = `rgba(118,124,140,${(rainAmt * .92).toFixed(3)})`;
+        const n = Math.ceil(W / 160) + 2, drift = (now / 120) % 160;
+        ctx.beginPath();
+        ctx.rect(0, 0, W, 50);
+        for (let i = 0; i < n; i++) {
+          const cx = i * 160 - 80 + drift, cy = 55 + (i % 2) * 22;
+          ctx.moveTo(cx + 130, cy); ctx.ellipse(cx, cy, 130, 48, 0, 0, 6.29);
+        }
+        ctx.fill();
+      }
+      const want = Math.round(rainAmt * W / 5);
+      while (drops.length < want) drops.push({x: Math.random() * W * 1.1 - W * .1, y: Math.random() * groundBot, v: 900 + Math.random() * 450, len: 12 + Math.random() * 10, land: groundTop + Math.random() * (groundBot - groundTop)});
+      if (drops.length > want) drops.length = want;
+      ctx.strokeStyle = "rgba(205,220,240,.75)"; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+      ctx.beginPath();
+      for (const d of drops) {
+        d.y += d.v * dt; d.x += d.v * .12 * dt;
+        if (d.y > d.land) {
+          if (splashes.length < 80) splashes.push({x: d.x, y: d.land, t: 0});
+          d.y = -d.len - Math.random() * 60; d.x = Math.random() * W * 1.1 - W * .1;
+        }
+        ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * .12, d.y - d.len);
+      }
+      ctx.stroke();
+      splashes = splashes.filter(sp => {
+        sp.t += dt; if (sp.t > .3) return false;
+        ctx.globalAlpha = 1 - sp.t / .3;
+        ctx.beginPath(); ctx.ellipse(sp.x, sp.y, 2 + sp.t * 22, 1 + sp.t * 6, 0, 0, 6.29); ctx.stroke();
+        ctx.globalAlpha = 1; return true;
+      });
+    }
+    requestAnimationFrame(weather);
+  }
+  requestAnimationFrame(weather);
 
   function loop(now){
     if (!running) return;
