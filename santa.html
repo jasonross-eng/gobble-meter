@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Santa Meter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#DCEBF5; --sky2:#B9D3E8; --field:#F2F7FB; --field2:#1F5132;
+  --ink:#3B2314; --muted:#5E5550; --panel:#FFFDF7; --panel-line:#CFDCE6;
+  --cranberry:#B3202E; --gold:#E3A12F; --pumpkin:#C8282E; --sage:#3E8E5A;
+  --meter-bg:#DCE8EF; --btn:#1F5132; --btn-ink:#FFFDF7;
+  --sun:#F7D774; --cloud:#FFFFFF; --hill1:#E4EEF6; --hill2:#D3E2EE;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sun:#F2E6C4; --cloud:#E8EEF4; --hill1:#E4EEF6; --hill2:#D3E2EE;
+    --sky:#16233F; --sky2:#2B3F66; --field:#F2F7FB; --field2:#173D27;
+    --ink:#F4EEE4; --muted:#C9C2B8; --panel:#1E2A3A; --panel-line:#3A4A5E;
+    --meter-bg:#33445A; --btn:#F4EEE4; --btn-ink:#1E2A3A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --sun:#F2E6C4; --cloud:#E8EEF4; --hill1:#E4EEF6; --hill2:#D3E2EE;
+  --sky:#16233F; --sky2:#2B3F66; --field:#F2F7FB; --field2:#173D27;
+  --ink:#F4EEE4; --muted:#C9C2B8; --panel:#1E2A3A; --panel-line:#3A4A5E;
+  --meter-bg:#33445A; --btn:#F4EEE4; --btn-ink:#1E2A3A;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{
+  font-family:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 70%);
+  overflow:hidden;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cranberry);outline-offset:3px}
+.weather{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.app.sky-dark .top{--ink:#F7EAD0;--muted:#E6D6BA;--sky:#2A2342}
+.app.sky-light .top{--ink:#3B2314;--muted:#5E5550;--sky:#DCEBF5}
+.top{color:var(--ink);transition:color 1s}
+.tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.tabs a{border:2px solid var(--ink);border-radius:999px;padding:.2rem .85rem;font-weight:700;font-size:.95rem;color:var(--ink);text-decoration:none;white-space:nowrap}
+.tabs a:hover{background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.top .tabs a[aria-current=page]{background:var(--ink);color:var(--sky)}
+.card .tabs{margin:0 0 1rem}
+.card .tabs a[aria-current=page]{background:var(--ink);color:var(--panel)}
+.aur1{animation:aur 14s ease-in-out infinite alternate}
+.aur2{animation:aur 10s ease-in-out infinite alternate-reverse}
+@keyframes aur{from{transform:translateX(-50px)}to{transform:translateX(50px)}}
+.twinkle{animation:twinkle 1.6s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.3}}
+.brow-n{transition:opacity .2s}
+.warn .brow-n,.loud .brow-n{opacity:0}
+@media (prefers-reduced-motion:reduce){.aur1,.aur2,.twinkle{animation:none}}
+.display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
+
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
+.top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem clamp(1rem,3vw,2rem) 0}
+.brand{font-size:clamp(1.4rem,3vw,2.1rem);font-weight:900;margin:0;line-height:1}
+.clock{text-align:right}
+.clock .time{font-size:clamp(2.4rem,7vw,4.6rem);font-weight:900;line-height:.95;font-variant-numeric:tabular-nums}
+.clock .sub{font-size:clamp(.9rem,1.6vw,1.1rem);color:var(--muted)}
+.clock.urgent .time{color:var(--cranberry)}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;margin-top:.4rem}
+.tool{border:2px solid var(--ink);background:transparent;border-radius:999px;padding:.25rem .8rem;font-weight:700;font-size:.95rem}
+.tool:hover{background:var(--ink);color:var(--sky)}
+
+.stage{position:relative;min-height:0;display:flex;align-items:flex-end;justify-content:center}
+.farm{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.turkey-wrap{perspective:1400px;position:relative;height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center}
+svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visible;position:relative;z-index:1}
+.bubble{
+  position:absolute;z-index:2;top:6%;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:3px solid var(--ink);border-radius:1.4rem;
+  padding:.45rem 1.1rem;font-size:clamp(1.1rem,2.6vw,1.8rem);font-weight:800;white-space:nowrap;
+}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-14px;width:22px;height:22px;background:var(--panel);border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
+.score{
+  position:absolute;z-index:2;left:clamp(.8rem,3vw,2rem);bottom:6%;
+  background:var(--panel);border:3px solid var(--ink);border-radius:1rem;padding:.6rem .9rem;min-width:11rem;
+}
+.score .n{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:900;line-height:1}
+.score .lbl{font-size:.95rem;color:var(--muted)}
+.next{height:10px;border-radius:999px;background:var(--meter-bg);margin-top:.45rem;overflow:hidden}
+.fb-row{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.55rem}
+.take{background:var(--ink)!important;color:var(--panel)!important}
+.give{display:block;width:100%;border:0;border-radius:.7rem;padding:.4rem .6rem;background:var(--pumpkin);color:#FFF8E6;font-size:1rem;font-weight:800}
+.give:hover{filter:brightness(1.1)}
+.give:disabled{opacity:.45;cursor:default;filter:none}
+.score.bump{animation:bump .5s ease-out}
+@keyframes bump{30%{transform:scale(1.08)}}
+.next>i{display:block;height:100%;width:0;background:var(--gold);border-radius:999px;transition:width .3s linear}
+
+/* Turkey moods: struts cockily when calm, paces when warn, runs around angry when loud */
+svg.turkey{--gait:.9s;will-change:transform}
+svg.turkey.warn{--gait:.55s}
+svg.turkey.loud{--gait:.26s}
+.tk-all{transform-box:view-box;transform-origin:200px 335px}
+.leg{transform-box:view-box}
+.moving .tk-all{animation:strut var(--gait) ease-in-out infinite}
+.loud.moving .tk-all{animation-name:run}
+.moving .leg-l{animation:step var(--gait) ease-in-out infinite}
+.moving .leg-r{animation:step var(--gait) ease-in-out infinite calc(var(--gait) / -2)}
+.pose .tk-all{animation:puff 1.8s ease-in-out infinite}
+.tk-head{transform-box:view-box;transform-origin:200px 205px;transition:transform .25s}
+.face-r .tk-head{transform:rotate(6deg)}
+.face-l .tk-head{transform:rotate(-6deg)}
+.loud.face-r .tk-head{transform:rotate(12deg)}
+.loud.face-l .tk-head{transform:rotate(-12deg)}
+.head{transition:fill .3s}
+.loud .head{fill:#C9503F}
+.lid{opacity:0;transition:opacity .2s}
+.calm .lid{opacity:1}
+.brow{opacity:0;transition:opacity .2s}
+.warn .brow,.loud .brow{opacity:1}
+.pupil{transition:r .2s,transform .2s}
+.face-r .pupil{transform:translateX(3px)}
+.face-l .pupil{transform:translateX(-3px)}
+.loud .pupil{r:2}
+.wattle{transform-box:view-box;transform-origin:207px 180px}
+.loud .wattle{animation:wag .2s ease-in-out infinite alternate}
+.steam{opacity:0;transition:opacity .2s}
+.loud .steam{opacity:1}
+.steam circle{transform-box:fill-box;transform-origin:center;animation:steam .8s ease-out infinite}
+.steam circle:nth-child(2){animation-delay:-.4s}
+@keyframes strut{0%,100%{transform:rotate(-5deg)}25%,75%{transform:translateY(-9px) rotate(0)}50%{transform:rotate(5deg)}}
+@keyframes run{0%,100%{transform:rotate(-10deg)}25%,75%{transform:translateY(-24px) rotate(0)}50%{transform:rotate(10deg)}}
+@keyframes step{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-14px)}}
+@keyframes puff{0%,100%{transform:scale(1)}40%,60%{transform:translateY(-4px) scale(1.07)}}
+@keyframes wag{from{transform:rotate(-16deg)}to{transform:rotate(16deg)}}
+@keyframes steam{0%{transform:translateY(0) scale(.4);opacity:.95}100%{transform:translateY(-34px) scale(1.6);opacity:0}}
+
+.feather-inner{transform-box:view-box;transform-origin:200px 250px;transform:scale(0);opacity:0;transition:transform .7s cubic-bezier(.3,1.6,.5,1),opacity .2s}
+.feather-inner.on{transform:scale(1);opacity:1}
+.feather-inner.fall{animation:fall 1.5s ease-in forwards}
+.feather-inner.plucked{transition:none;transform:scale(0);opacity:0}
+/* 10 feathers: hop, wiggle, spin around, big jump */
+svg.turkey.dance{animation:dance 2.6s ease-in-out 2}
+.dance .tk-all{animation:wiggle .32s ease-in-out infinite alternate!important}
+.dance .leg-l{animation:step .32s ease-in-out infinite!important}
+.dance .leg-r{animation:step .32s ease-in-out infinite -.16s!important}
+@keyframes dance{
+  0%{translate:0 0;rotate:y 0deg}
+  10%{translate:0 -55px}
+  20%{translate:0 0}
+  30%{translate:0 -55px}
+  40%{translate:0 0;rotate:y 0deg}
+  55%{translate:0 -25px;rotate:y 360deg}
+  62%{translate:0 0;rotate:y 360deg}
+  80%{translate:0 -140px;rotate:y 720deg}
+  92%{translate:0 0;rotate:y 720deg}
+  96%{translate:0 -15px}
+  100%{translate:0 0;rotate:y 720deg}
+}
+@keyframes wiggle{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
+.plucker{position:absolute;z-index:2;bottom:0;left:0;display:none;overflow:visible;pointer-events:none}
+.flying-feather{position:absolute;z-index:3;left:0;top:0;pointer-events:none;overflow:visible}
+.yelp .tk-all{animation:yelp .7s ease-out!important}
+@keyframes yelp{0%{transform:none}20%{transform:translateY(-46px) rotate(-6deg)}40%{transform:none}55%{transform:translateY(-14px) rotate(4deg)}70%,100%{transform:none}}
+@keyframes fall{0%{transform:scale(1);opacity:1}100%{transform:translate(30px,320px) rotate(70deg) scale(.8);opacity:0}}
+
+.meter-row{position:relative;z-index:2;padding:.8rem clamp(1rem,3vw,2rem) 1rem;background:var(--field2);display:grid;grid-template-columns:1fr auto;gap:.5rem 1.5rem;align-items:center}
+.meter{position:relative;height:clamp(28px,4.5vh,44px);border-radius:999px;background:var(--meter-bg);border:3px solid var(--ink);overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--sage);transition:background .2s}
+.meter.warn .fill{background:var(--gold)}
+.meter.loud .fill{background:var(--cranberry)}
+.meter.off{opacity:.45}
+.tool[aria-pressed=true]{background:var(--cranberry);border-color:var(--cranberry);color:#FFF8E6}
+.meter .limit{position:absolute;top:-3px;bottom:-3px;width:5px;background:var(--ink);transform:translateX(-50%)}
+.meter-labels{display:flex;justify-content:space-between;color:#FFF8E6;font-weight:700;font-size:.95rem;grid-column:1}
+.limit-ctl{grid-row:1 / span 2;grid-column:2;color:#FFF8E6;font-weight:700;display:flex;flex-direction:column;gap:.2rem;font-size:.95rem;min-width:11rem}
+input[type=range]{accent-color:var(--gold);width:100%}
+
+.overlay{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1rem;background:color-mix(in srgb,var(--sky2) 55%,transparent);overflow:auto}
+.overlay[hidden]{display:none}
+.card{background:var(--panel);border:4px solid var(--ink);border-radius:1.6rem;padding:clamp(1.2rem,4vw,2.2rem);width:min(560px,100%);box-shadow:8px 8px 0 var(--ink)}
+.card h2{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:900;margin:0 0 .4rem;line-height:1.05}
+.card p{margin:.3rem 0 1rem;line-height:1.5;color:var(--muted);max-width:60ch}
+.q{display:block;font-weight:700;font-size:1.2rem;margin:1rem 0 .5rem}
+.mins{display:flex;align-items:center;gap:.6rem}
+.mins input{width:6.5rem;font-size:2rem;font-weight:800;padding:.2rem .6rem;border:3px solid var(--ink);border-radius:.8rem;background:transparent;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.chip{border:2px solid var(--panel-line);background:transparent;border-radius:999px;padding:.3rem .85rem;font-weight:700}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.range-ends{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
+.go{margin-top:1.4rem;width:100%;border:0;border-radius:1rem;padding:.9rem 1rem;background:var(--btn);color:var(--btn-ink);font-size:1.35rem;font-weight:800}
+.go:hover{filter:brightness(1.15)}
+.err{color:var(--cranberry);font-weight:700;margin-top:.8rem;min-height:1.2em}
+.big-feathers{font-size:clamp(3rem,10vw,5rem);font-weight:900;line-height:1;color:var(--pumpkin);margin:.4rem 0}
+
+@media (max-width:640px){
+  .meter-row{grid-template-columns:1fr}
+  .limit-ctl{grid-row:auto;grid-column:1}
+  .score{min-width:8rem;bottom:3%}
+  .bubble{top:2%}
+}
+@media (prefers-reduced-motion:reduce){
+  .tk-all,.leg,.wattle,.steam circle{animation:none!important}
+  .feather-inner{transition:opacity .2s}
+  .feather-inner.fall{animation:none;opacity:0}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div>
+      <h1 class="brand display">Santa Meter</h1>
+      <nav class="tabs" aria-label="Choose a meter">
+        <a href="index.html">Gobble Meter</a>
+        <a href="santa.html" aria-current="page">Santa Meter</a>
+      </nav>
+    </div>
+    <div class="clock display" id="clock">
+      <div class="time" id="time">--:--</div>
+      <div class="sub" id="timeSub">left in class</div>
+      <div class="tools">
+        <button class="tool" id="minus">−1 min</button>
+        <button class="tool" id="plus">+1 min</button>
+        <button class="tool" id="pause">Pause</button>
+        <button class="tool" id="mic" aria-pressed="false">Mic off</button>
+        <button class="tool" id="sound" aria-pressed="false">Sound off</button>
+        <button class="tool" id="full">Full screen</button>
+        <button class="tool" id="stop">End</button>
+      </div>
+    </div>
+  </header>
+
+  <canvas class="weather" id="weather" aria-hidden="true"></canvas>
+  <main class="stage">
+    <svg class="farm" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <pattern id="posts" x="0" y="412" width="70" height="62" patternUnits="userSpaceOnUse">
+          <rect x="28" y="2" width="14" height="58" fill="#B98A5A" stroke="#3B2314" stroke-width="3"/>
+          <ellipse cx="35" cy="3" rx="11" ry="5" fill="#FFFFFF" stroke="#3B2314" stroke-width="2"/>
+        </pattern>
+        <pattern id="stripes" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="32" height="32" fill="#FFFFFF"/><rect width="16" height="32" fill="#C8282E"/>
+        </pattern>
+        <linearGradient id="aur" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#7CF5C3" stop-opacity="0"/>
+          <stop offset=".5" stop-color="#5BE3A8" stop-opacity=".6"/>
+          <stop offset="1" stop-color="#4FB0E8" stop-opacity="0"/>
+        </linearGradient>
+        <g id="pine" stroke="#3B2314" stroke-width="3" stroke-linejoin="round">
+          <rect x="-6" y="-14" width="12" height="14" fill="#6B4322"/>
+          <path d="M0 -120 L-34 -70 L-20 -70 L-46 -30 L-28 -30 L-56 -12 L56 -12 L28 -30 L46 -30 L20 -70 L34 -70 Z" fill="#2F6B45"/>
+          <path d="M0 -120 L-14 -100 L-6 -97 L0 -103 L6 -97 L14 -100 Z M-34 -70 L-20 -70 L-26 -64 Z M34 -70 L20 -70 L26 -64 Z" fill="#FFFFFF" stroke-width="2"/>
+        </g>
+        <g id="gift" stroke="#3B2314" stroke-width="3" stroke-linejoin="round">
+          <rect x="-22" y="-36" width="44" height="36" rx="3" fill="currentColor"/>
+          <rect x="-5" y="-36" width="10" height="36" fill="#F4D35E"/>
+          <rect x="-26" y="-46" width="52" height="11" rx="2" fill="currentColor"/>
+          <rect x="-5" y="-46" width="10" height="11" fill="#F4D35E"/>
+          <path d="M0 -46 C-16 -62 -24 -48 0 -46 C24 -48 16 -62 0 -46 Z" fill="#F4D35E"/>
+        </g>
+        <g id="cane" fill="none" stroke-linecap="round">
+          <path d="M0 0 V-70 A14 14 0 0 1 28 -70 V-62" stroke="#3B2314" stroke-width="13"/>
+          <path d="M0 0 V-70 A14 14 0 0 1 28 -70 V-62" stroke="#FFFFFF" stroke-width="8"/>
+          <path d="M0 0 V-70 A14 14 0 0 1 28 -70 V-62" stroke="#C8282E" stroke-width="8" stroke-dasharray="8 8"/>
+        </g>
+      </defs>
+
+      <filter id="tod" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feColorMatrix id="todMatrix" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+      </filter>
+      <g id="aurora" opacity="0">
+        <path class="aur1" d="M-100 150 C150 60 300 200 500 110 S850 60 1300 150 L1300 260 C900 160 700 300 450 210 S100 240 -100 270 Z" fill="url(#aur)"/>
+        <path class="aur2" d="M-100 90 C200 30 380 150 620 80 S980 40 1300 100 L1300 175 C1000 110 800 215 600 150 S200 135 -100 185 Z" fill="url(#aur)" opacity=".75"/>
+      </g>
+      <g id="stars" fill="#FFF6DD" opacity="0"></g>
+      <g id="moon" opacity="0">
+        <path d="M0 -40 A40 40 0 1 0 0 40 A30 40 0 1 1 0 -40 Z" fill="#F4EBC8" stroke="#3B2314" stroke-width="3"/>
+      </g>
+      <circle id="sun" cx="960" cy="115" r="58" fill="var(--sun)"/>
+      <g id="clouds" fill="var(--cloud)">
+        <ellipse cx="250" cy="120" rx="70" ry="22"/><ellipse cx="285" cy="104" rx="40" ry="24"/><ellipse cx="225" cy="108" rx="30" ry="18"/>
+        <ellipse cx="660" cy="80" rx="60" ry="18"/><ellipse cx="690" cy="66" rx="34" ry="20"/>
+      </g>
+      <g id="land" filter="url(#tod)">
+      <path d="M0 395 Q200 315 420 375 T850 355 T1200 365 V600 H0 Z" fill="var(--hill1)" stroke="#B9CCDB" stroke-width="3"/>
+      <use href="#pine" transform="translate(470 392) scale(.55)"/>
+      <use href="#pine" transform="translate(520 386) scale(.7)"/>
+      <use href="#pine" transform="translate(700 372) scale(.6)"/>
+      <use href="#pine" transform="translate(890 372) scale(.65)"/>
+      <use href="#pine" transform="translate(940 378) scale(.5)"/>
+      <path d="M0 440 Q300 385 600 425 T1200 415 V600 H0 Z" fill="var(--hill2)" stroke="#B9CCDB" stroke-width="3"/>
+
+      <!-- Santa's workshop -->
+      <g stroke="#3B2314" stroke-width="4" stroke-linejoin="round">
+        <rect x="248" y="226" width="28" height="56" fill="#A8432F"/>
+        <rect x="243" y="218" width="38" height="12" rx="5" fill="#FFFFFF"/>
+        <rect x="110" y="322" width="200" height="140" fill="#B8322C"/>
+        <path d="M92 332 L135 266 L210 236 L285 266 L328 332 Q318 342 306 334 Q294 344 282 334 Q270 344 258 334 Q246 344 234 334 Q222 344 210 334 Q198 344 186 334 Q174 344 162 334 Q150 344 138 334 Q126 344 114 334 Q102 342 92 332 Z" fill="#FFFFFF"/>
+        <rect x="190" y="272" width="40" height="36" fill="#FFD86B"/>
+        <path d="M210 272 V308 M190 290 H230" stroke="#2E6B3A" stroke-width="4"/>
+        <rect x="128" y="368" width="34" height="30" fill="#FFD86B"/>
+        <path d="M145 368 V398 M128 383 H162" stroke="#2E6B3A" stroke-width="4"/>
+        <rect x="258" y="368" width="34" height="30" fill="#FFD86B"/>
+        <path d="M275 368 V398 M258 383 H292" stroke="#2E6B3A" stroke-width="4"/>
+        <rect x="178" y="372" width="64" height="90" rx="4" fill="#2E6B3A"/>
+        <circle cx="210" cy="400" r="15" fill="none" stroke="#1F5132" stroke-width="9"/>
+        <path d="M210 386 l-9 -7 v12 z M210 386 l9 -7 v12 z" fill="#C8282E" stroke-width="2"/>
+        <circle cx="232" cy="420" r="3.5" fill="#E3A12F" stroke-width="1.5"/>
+      </g>
+      <circle class="twinkle" cx="122" cy="334" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.00s"/><circle class="twinkle" cx="140" cy="334" r="5" fill="#FFD84A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.37s"/><circle class="twinkle" cx="158" cy="334" r="5" fill="#5AC8FF" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.74s"/><circle class="twinkle" cx="176" cy="334" r="5" fill="#7CE07C" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.11s"/><circle class="twinkle" cx="194" cy="334" r="5" fill="#FF8AD8" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.48s"/><circle class="twinkle" cx="212" cy="334" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.25s"/><circle class="twinkle" cx="230" cy="334" r="5" fill="#FFD84A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.62s"/><circle class="twinkle" cx="248" cy="334" r="5" fill="#5AC8FF" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.99s"/><circle class="twinkle" cx="266" cy="334" r="5" fill="#7CE07C" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.36s"/><circle class="twinkle" cx="284" cy="334" r="5" fill="#FF8AD8" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.13s"/><circle class="twinkle" cx="302" cy="334" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.50s"/>
+      <!-- North Pole -->
+      <g stroke="#3B2314" stroke-width="4">
+        <rect x="340" y="256" width="30" height="206" fill="url(#stripes)"/>
+        <circle cx="355" cy="246" r="15" fill="#E3A12F"/>
+        <ellipse cx="355" cy="462" rx="30" ry="8" fill="#FFFFFF"/>
+      </g>
+
+      <rect x="395" y="412" width="805" height="62" fill="url(#posts)"/>
+      <g fill="#B98A5A" stroke="#3B2314" stroke-width="3">
+        <rect x="395" y="426" width="805" height="9"/>
+        <rect x="395" y="448" width="805" height="9"/>
+      </g>
+      <g fill="#FFFFFF" stroke="#3B2314" stroke-width="2">
+        <rect x="395" y="421" width="805" height="6" rx="3"/>
+        <rect x="395" y="443" width="805" height="6" rx="3"/>
+      </g>
+
+      <rect x="0" y="460" width="1200" height="140" fill="var(--field)"/>
+      <path d="M0 460 H1200" stroke="#C9D9E6" stroke-width="6"/>
+
+      <!-- Elf who wanders by now and then (positioned by script) -->
+      <g id="pilgrim" style="display:none" stroke="#3B2314" stroke-width="2.5" stroke-linejoin="round">
+        <g id="pilBody">
+          <g id="pilLegB">
+            <rect x="-4" y="-50" width="8" height="42" fill="#E9E2D6"/>
+            <path d="M-4 -44 h8 M-4 -36 h8 M-4 -28 h8 M-4 -20 h8" stroke="#A8232C" stroke-width="3"/>
+            <path d="M-6 -9 H8 Q16 -9 20 -16 Q24 -10 18 -4 Q14 0 4 0 H-6 Z" fill="#245E38"/>
+          </g>
+          <g id="pilLegA">
+            <rect x="-4" y="-50" width="8" height="42" fill="#FFFFFF"/>
+            <path d="M-4 -44 h8 M-4 -36 h8 M-4 -28 h8 M-4 -20 h8" stroke="#C8282E" stroke-width="3"/>
+            <path d="M-6 -9 H8 Q16 -9 20 -16 Q24 -10 18 -4 Q14 0 4 0 H-6 Z" fill="#2E7D46"/>
+            <circle cx="20" cy="-17" r="2.8" fill="#E3A12F" stroke-width="1.2"/>
+          </g>
+          <path d="M-13 -98 L15 -98 L22 -50 L16 -44 L10 -50 L4 -44 L-2 -50 L-8 -44 L-14 -50 L-20 -44 Z" fill="#2E8B4A"/>
+          <rect x="-16" y="-66" width="35" height="6" fill="#1A1416"/>
+          <rect x="9" y="-68" width="7" height="9" fill="none" stroke="#E3A12F" stroke-width="2"/>
+          <path d="M-12 -99 L16 -99 L12 -90 L8 -96 L4 -90 L0 -96 L-4 -90 L-8 -96 L-12 -90 Z" fill="#C8282E"/>
+          <g id="pilFork"><g>
+            <rect x="6" y="-86" width="26" height="22" rx="2" fill="#C8282E"/>
+            <rect x="16" y="-86" width="6" height="22" fill="#F4D35E" stroke-width="1.5"/>
+            <path d="M19 -86 c-7 -9 -14 -2 0 0 c14 -2 7 -9 0 0" fill="#F4D35E" stroke-width="1.5"/>
+          </g>
+          </g>
+          <g id="pilArm">
+          <line x1="2" y1="-92" x2="13" y2="-68" stroke="#3B2314" stroke-width="11" stroke-linecap="round"/>
+          <line x1="2" y1="-92" x2="13" y2="-68" stroke="#2E8B4A" stroke-width="7" stroke-linecap="round"/>
+          <circle id="pilHand" cx="15" cy="-64" r="5" fill="#F1C9A0"/>
+          </g>
+          <circle cx="0" cy="-112" r="12.5" fill="#C0652A"/>
+          <circle cx="3" cy="-110" r="11" fill="#F1C9A0"/>
+          <path d="M-7 -115 L-22 -128 L-5 -105 Z" fill="#F1C9A0"/>
+          <circle cx="9" cy="-113" r="1.6" fill="#3B2314" stroke="none"/>
+          <circle cx="8" cy="-106" r="3" fill="#E88A8A" stroke="none"/>
+          <path d="M13 -112 q4 3 0 5" fill="#F1C9A0" stroke-width="2"/>
+          <path d="M4 -103 q4 3 8 0" fill="none" stroke-width="1.8" stroke-linecap="round"/>
+          <g id="pilHat">
+            <path d="M-10 -121 L16 -121 C12 -140 0 -153 -22 -151 Z" fill="#2E8B4A"/>
+            <rect x="-11" y="-125" width="28" height="7" rx="3.5" fill="#C8282E"/>
+            <circle cx="-23" cy="-151" r="4.5" fill="#E3A12F"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- Sleigh -->
+      <g stroke="#3B2314" stroke-width="4" stroke-linejoin="round">
+        <path d="M14 482 H122 Q146 482 142 462" fill="none" stroke="#E3A12F" stroke-width="6" stroke-linecap="round"/>
+        <path d="M40 470 V482 M100 470 V482" stroke="#E3A12F" stroke-width="5"/>
+        <use href="#gift" transform="translate(66 432) scale(.7)" style="color:#2F6DB5"/>
+        <use href="#gift" transform="translate(92 432) scale(.55)" style="color:#2E8B4A"/>
+        <path d="M24 472 L22 420 Q22 400 42 402 L56 404 L60 432 L112 432 Q132 432 130 448 L122 472 Z" fill="#C8282E"/>
+        <path d="M30 462 H118" stroke="#E3A12F" stroke-width="4"/>
+      </g>
+
+      <!-- Snowman -->
+      <g stroke="#3B2314" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M908 410 L872 386 M876 389 l-8 -8 M962 410 L998 384 M994 387 l6 -10" fill="none" stroke="#6B4322" stroke-width="4"/>
+        <circle cx="935" cy="470" r="40" fill="#FFFFFF"/>
+        <circle cx="935" cy="414" r="29" fill="#FFFFFF"/>
+        <circle cx="935" cy="370" r="21" fill="#FFFFFF"/>
+        <path d="M915 386 Q935 396 955 386 L957 394 Q935 404 913 394 Z M948 392 l6 22 l-10 -2 z" fill="#C8282E"/>
+        <circle cx="928" cy="366" r="2.6" fill="#3B2314"/><circle cx="942" cy="366" r="2.6" fill="#3B2314"/>
+        <path d="M935 372 L956 376 L935 378 Z" fill="#E8792E" stroke-width="2"/>
+        <circle cx="935" cy="408" r="3" fill="#3B2314"/><circle cx="935" cy="422" r="3" fill="#3B2314"/>
+        <rect x="917" y="324" width="36" height="28" fill="#1E1A1C"/>
+        <rect x="909" y="348" width="52" height="7" rx="3" fill="#1E1A1C"/>
+        <rect x="917" y="340" width="36" height="6" fill="#C8282E" stroke-width="2"/>
+      </g>
+
+      <!-- Christmas tree -->
+      <g stroke="#3B2314" stroke-width="3.5" stroke-linejoin="round">
+        <rect x="1100" y="466" width="22" height="20" fill="#6B4322"/>
+        <path d="M1110 288 L1030 474 L1192 474 Z" fill="#2F6B45"/>
+        <path d="M1110 288 L1046 404 Q1110 420 1176 404 Z" fill="#357A4F"/>
+        <path d="M1110 288 L1066 356 Q1110 368 1154 356 Z" fill="#3B8757"/>
+        <path d="M1062 356 Q1110 376 1158 352 M1044 406 Q1110 428 1178 404" fill="none" stroke="#F4D35E" stroke-width="3"/>
+        <path d="M1110 262 l7 15 l16 1 l-12 10 l4 16 l-15 -9 l-15 9 l4 -16 l-12 -10 l16 -1 z" fill="#F4D35E"/>
+      </g>
+      
+
+      <use href="#cane" transform="translate(300 556)"/>
+      <use href="#cane" transform="translate(694 566) scale(.8)"/>
+      <use href="#gift" transform="translate(440 548)" style="color:#C8282E"/>
+      <use href="#gift" transform="translate(490 566) scale(.75)" style="color:#2E8B4A"/>
+      <use href="#gift" transform="translate(790 556) scale(1.1)" style="color:#2F6DB5"/>
+      <use href="#gift" transform="translate(846 574) scale(.8)" style="color:#8E44AD"/>
+      <use href="#gift" transform="translate(1010 570) scale(1.2)" style="color:#C8282E"/>
+      </g>
+      <!-- tree lights stay bright at night -->
+      <circle class="twinkle" cx="1092" cy="318" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.00s"/><circle class="twinkle" cx="1128" cy="334" r="5" fill="#FFD84A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.37s"/><circle class="twinkle" cx="1080" cy="372" r="5" fill="#5AC8FF" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.74s"/><circle class="twinkle" cx="1112" cy="388" r="5" fill="#7CE07C" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.11s"/><circle class="twinkle" cx="1146" cy="370" r="5" fill="#FF8AD8" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.48s"/><circle class="twinkle" cx="1062" cy="420" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.25s"/><circle class="twinkle" cx="1098" cy="438" r="5" fill="#FFD84A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.62s"/><circle class="twinkle" cx="1134" cy="446" r="5" fill="#5AC8FF" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.99s"/><circle class="twinkle" cx="1168" cy="424" r="5" fill="#7CE07C" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-1.36s"/><circle class="twinkle" cx="1050" cy="458" r="5" fill="#FF8AD8" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.13s"/><circle class="twinkle" cx="1180" cy="460" r="5" fill="#FF5A5A" stroke="#3B2314" stroke-width="1.5" style="animation-delay:-0.50s"/>
+    </svg>
+    <svg class="plucker" id="plucker" viewBox="-75 -165 150 172" aria-hidden="true"></svg>
+    <div class="bubble display" id="bubble">Ho ho ho! Nice and quiet!</div>
+    <div class="score">
+      <div class="n display"><span id="count">0</span> / 10</div>
+      <div class="lbl">presents</div>
+      <div class="next" title="Next present"><i id="nextBar"></i></div>
+      <div class="fb-row">
+        <button class="give display" id="give" type="button" title="Give a present for good behavior (shortcut: F)">+ Give</button>
+        <button class="give take display" id="take" type="button" title="An elf comes and takes a present (shortcut: T)">− Take</button>
+      </div>
+    </div>
+    <div class="turkey-wrap">
+      <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="Santa, whose sack fills with presents as the class stays quiet">
+        <defs><clipPath id="coatClip"><ellipse cx="200" cy="250" rx="78" ry="66"/></clipPath></defs>
+        <g class="tk-all">
+        <g stroke="#3B2314" stroke-width="5" stroke-linejoin="round">
+          <path d="M112 300 C82 240 100 168 150 150 L250 150 C300 168 318 240 288 300 Z" fill="#A9773F"/>
+          <path d="M130 220 q8 -6 16 0 M260 210 q8 -6 16 0 M120 262 q8 -6 16 0" fill="none" stroke="#7E5428" stroke-width="3"/>
+          <ellipse cx="200" cy="152" rx="56" ry="14" fill="#5A3A1E"/>
+        </g>
+        <g id="tail"></g>
+        <g class="tk-body">
+          <g stroke="#3B2314" stroke-width="4" stroke-linejoin="round">
+            <g class="leg leg-l">
+              <rect x="168" y="290" width="22" height="28" fill="#B8262E"/>
+              <path d="M164 316 H192 V334 Q192 340 186 340 H156 Q148 340 150 332 Q152 324 164 322 Z" fill="#1E1A1C"/>
+            </g>
+            <g class="leg leg-r">
+              <rect x="210" y="290" width="22" height="28" fill="#B8262E"/>
+              <path d="M236 316 H208 V334 Q208 340 214 340 H244 Q252 340 250 332 Q248 324 236 322 Z" fill="#1E1A1C"/>
+            </g>
+          </g>
+          <ellipse cx="200" cy="250" rx="78" ry="66" fill="#C8282E"/>
+          <g clip-path="url(#coatClip)">
+            <rect x="189" y="180" width="22" height="140" fill="#FFF8F0"/>
+            <rect x="110" y="298" width="180" height="24" fill="#FFF8F0"/>
+            <rect x="110" y="250" width="180" height="18" fill="#1E1A1C"/>
+            <path d="M110 298 H290 M189 180 V298 M211 180 V298" stroke="#3B2314" stroke-width="3"/>
+          </g>
+          <ellipse cx="200" cy="250" rx="78" ry="66" fill="none" stroke="#3B2314" stroke-width="5"/>
+          <rect x="186" y="246" width="28" height="26" rx="3" fill="none" stroke="#E3A12F" stroke-width="5"/>
+          <g stroke="#3B2314" stroke-width="4">
+            <ellipse cx="146" cy="244" rx="22" ry="38" fill="#B8262E" transform="rotate(18 146 246)"/>
+            <ellipse cx="254" cy="244" rx="22" ry="38" fill="#B8262E" transform="rotate(-18 254 246)"/>
+            <ellipse cx="137" cy="268" rx="15" ry="7" fill="#FFF8F0" transform="rotate(18 137 268)"/>
+            <ellipse cx="263" cy="268" rx="15" ry="7" fill="#FFF8F0" transform="rotate(-18 263 268)"/>
+            <circle cx="133" cy="282" r="13" fill="#2E6B3A"/>
+            <circle cx="267" cy="282" r="13" fill="#2E6B3A"/>
+          </g>
+          <g class="tk-head">
+            <g class="steam" fill="#FFF8E6" stroke="#3B2314" stroke-width="2">
+              <circle cx="158" cy="112" r="8"/>
+              <circle cx="242" cy="112" r="8"/>
+            </g>
+            <circle class="head" cx="200" cy="168" r="36" fill="#F3C9A6" stroke="#3B2314" stroke-width="5"/>
+            <path d="M164 168 C158 204 176 230 200 236 C224 230 242 204 236 168 C228 182 214 188 200 188 C186 188 172 182 164 168 Z" fill="#FFFFFF" stroke="#3B2314" stroke-width="4" stroke-linejoin="round"/>
+            <circle cx="177" cy="175" r="7" fill="#E88A8A" opacity=".6"/>
+            <circle cx="223" cy="175" r="7" fill="#E88A8A" opacity=".6"/>
+            <circle cx="186" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle cx="214" cy="160" r="8" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle class="pupil" cx="187" cy="161" r="4.5" fill="#3B2314"/>
+            <circle class="pupil" cx="213" cy="161" r="4.5" fill="#3B2314"/>
+            <path class="lid" d="M177 161 a9 9 0 0 1 18 0 Z M205 161 a9 9 0 0 1 18 0 Z" fill="#F3C9A6" stroke="#3B2314" stroke-width="2.5" stroke-linejoin="round"/>
+            <g class="brow-n" fill="none" stroke-linecap="round">
+              <path d="M176 148 q10 -6 20 0 M204 148 q10 -6 20 0" stroke="#3B2314" stroke-width="9"/>
+              <path d="M176 148 q10 -6 20 0 M204 148 q10 -6 20 0" stroke="#FFFFFF" stroke-width="5"/>
+            </g>
+            <g class="brow" stroke-linecap="round">
+              <path d="M175 144 l20 8 M225 144 l-20 8" stroke="#3B2314" stroke-width="9"/>
+              <path d="M175 144 l20 8 M225 144 l-20 8" stroke="#FFFFFF" stroke-width="5"/>
+            </g>
+            <path class="wattle" d="M200 184 C190 177 172 180 167 193 C180 191 190 194 200 190 C210 194 220 191 233 193 C228 180 210 177 200 184 Z" fill="#FFFFFF" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="200" cy="177" r="8" fill="#E57373" stroke="#3B2314" stroke-width="3"/>
+            <path d="M166 132 C168 92 214 74 246 92 C262 102 268 120 266 140 L254 140 C252 126 246 116 236 112 L234 132 Z" fill="#C8282E" stroke="#3B2314" stroke-width="4" stroke-linejoin="round"/>
+            <rect x="158" y="124" width="84" height="19" rx="9.5" fill="#FFF8F0" stroke="#3B2314" stroke-width="4"/>
+            <circle cx="260" cy="146" r="12" fill="#FFF8F0" stroke="#3B2314" stroke-width="4"/>
+          </g>
+        </g>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <footer class="meter-row">
+    <div class="meter" id="meter" role="meter" aria-label="Classroom noise level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="fill" id="fill"></div>
+      <div class="limit" id="limitMark"></div>
+    </div>
+    <div class="meter-labels"><span>Whisper</span><span>Talking</span><span>Too loud</span></div>
+    <label class="limit-ctl">Loudness limit
+      <input type="range" id="limit2" min="30" max="90" value="60" aria-label="Loudness limit">
+    </label>
+  </footer>
+
+  <div class="overlay" id="setup">
+    <div class="card">
+      <nav class="tabs" aria-label="Choose a meter">
+        <a href="index.html">Gobble Meter</a>
+        <a href="santa.html" aria-current="page">Santa Meter</a>
+      </nav>
+      <h2 class="display">Santa Meter</h2>
+      <p>Stay under the loudness limit to fill Santa’s sack with presents. If the room gets too loud, a present falls out.</p>
+      <label class="q" for="minsInput">How many minutes are left in class?</label>
+      <div class="mins"><input id="minsInput" type="number" min="1" max="180" value="20" inputmode="numeric"><span>minutes</span></div>
+      <div class="chips" id="chips"></div>
+      <label class="q" for="limit1">Loudness limit</label>
+      <input type="range" id="limit1" min="30" max="90" value="60">
+      <div class="range-ends"><span>Strict</span><span>Relaxed</span></div>
+      <button class="go display" id="start">Start listening</button>
+      <div class="err" id="err" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="done" hidden>
+    <div class="card" style="text-align:center">
+      <h2 class="display">Time’s up!</h2>
+      <p style="margin-inline:auto">Your class earned</p>
+      <div class="big-feathers display"><span id="finalCount">0</span> of 10</div>
+      <p style="margin-inline:auto" id="finalMsg">presents.</p>
+      <button class="go display" id="again">Start again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const FEATHERS = 10;
+  const COLORS = ["#C8282E","#2E8B4A","#2F6DB5","#E3A12F","#8E44AD"];
+  const RIBBONS = ["#F4D35E","#F4D35E","#F4D35E","#C8282E","#F4D35E"];
+  const presentSvg = (c, r) =>
+    `<rect x="-28" y="-14" width="56" height="44" rx="4" fill="${c}" stroke="#3B2314" stroke-width="4"/>` +
+    `<rect x="-6" y="-14" width="12" height="44" fill="${r}" stroke="#3B2314" stroke-width="2"/>` +
+    `<rect x="-32" y="-26" width="64" height="13" rx="3" fill="${c}" stroke="#3B2314" stroke-width="4"/>` +
+    `<rect x="-6" y="-26" width="12" height="13" fill="${r}" stroke="#3B2314" stroke-width="2"/>` +
+    `<path d="M0 -26 C-18 -44 -28 -28 0 -26 C28 -28 18 -44 0 -26 Z" fill="${r}" stroke="#3B2314" stroke-width="3"/>`;
+  const $ = id => document.getElementById(id);
+
+  const tail = $("tail");
+  const ns = "http://www.w3.org/2000/svg";
+  const feathers = [];
+  for (let i = 0; i < FEATHERS; i++) {
+    const angle = -72 + i * (144 / (FEATHERS - 1));
+    const outer = document.createElementNS(ns, "g");
+    outer.setAttribute("transform", `rotate(${angle} 200 250)`);
+    const inner = document.createElementNS(ns, "g");
+    inner.setAttribute("class", "feather-inner");
+    const c = COLORS[i % COLORS.length];
+    // A present popping out of Santa's sack, kept mostly upright
+    inner.innerHTML = `<g transform="translate(200 108) rotate(${(-angle * 0.8).toFixed(1)})">${presentSvg(c, RIBBONS[i % RIBBONS.length])}</g>`;
+    outer.appendChild(inner);
+    tail.appendChild(outer);
+    feathers.push(inner);
+  }
+
+  const chipsEl = $("chips"), minsInput = $("minsInput");
+  [5,10,15,20,30,45,60].forEach(m => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = m + " min";
+    b.setAttribute("aria-pressed", m === 20 ? "true" : "false");
+    b.onclick = () => { minsInput.value = m; syncChips(); };
+    chipsEl.appendChild(b);
+  });
+  function syncChips(){
+    [...chipsEl.children].forEach(b => b.setAttribute("aria-pressed", String(parseInt(b.textContent) === +minsInput.value)));
+  }
+  minsInput.addEventListener("input", syncChips);
+
+  let limit = 60;
+  const l1 = $("limit1"), l2 = $("limit2");
+  function setLimit(v){
+    limit = +v; l1.value = l2.value = v;
+    $("limitMark").style.left = limit + "%";
+    try { localStorage.setItem("gobble-limit", String(limit)); } catch(e){}
+  }
+  l1.oninput = e => setLimit(e.target.value);
+  l2.oninput = e => setLimit(e.target.value);
+  let savedLimit = 60;
+  try { const s = parseInt(localStorage.getItem("gobble-limit")); if (s >= 30 && s <= 90) savedLimit = s; } catch(e){}
+  setLimit(savedLimit);
+
+  let audioCtx, analyser, buf, stream;
+  let level = 0, endTime = 0, pausedLeft = null, running = false;
+  let heard = false, warned = false, startedAt = 0;
+  let earned = 0, quietMs = 0, loudMs = 0, lastLoss = 0, interval = 60000, lastFrame = 0;
+
+  async function start(){
+    const mins = Math.max(1, Math.min(180, parseInt(minsInput.value) || 0));
+    $("err").textContent = "";
+    try { if (audioCtx) audioCtx.close(); } catch(e){}
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $("err").textContent = "This page can’t reach the microphone from here. Download the file and open it directly in Chrome.";
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    } catch (e) {
+      const msgs = {
+        NotAllowedError: "The microphone was blocked. Click the lock or mic icon in the address bar, choose Allow, then try again.",
+        SecurityError: "The microphone was blocked by the page around this one. Download the file and open it directly in Chrome.",
+        NotFoundError: "No microphone was found. Plug one in or check your computer’s sound settings.",
+        NotReadableError: "Another app is using the microphone. Close Zoom, Meet, or other tabs that use it, then try again.",
+        OverconstrainedError: "This microphone didn’t accept the settings. Try a different microphone."
+      };
+      $("err").textContent = (msgs[e.name] || "The microphone didn’t start.") + " (" + e.name + ")";
+      return;
+    }
+    if (audioCtx.state === "suspended") { try { await audioCtx.resume(); } catch(e){} }
+    const src = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    buf = new Float32Array(analyser.fftSize);
+    src.connect(analyser);
+
+    const total = mins * 60000;
+    endTime = Date.now() + total;
+    pausedLeft = null;
+    interval = Math.max(6000, total * 0.85 / FEATHERS);
+    earned = 0; quietMs = 0; loudMs = 0; lastLoss = 0;
+    feathers.forEach(f => f.classList.remove("on","fall"));
+    updateCount();
+    $("pause").textContent = "Pause";
+    $("timeSub").textContent = "left in class";
+    $("setup").hidden = true; $("done").hidden = true;
+    heard = false; warned = false; startedAt = Date.now(); lastMood = ""; setMic(false);
+    running = true; lastFrame = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function stopAudio(){
+    running = false;
+    warned = false; setMood("calm");
+    try { stream && stream.getTracks().forEach(t => t.stop()); } catch(e){}
+    try { audioCtx && audioCtx.close(); } catch(e){}
+  }
+
+  function readLevel(){
+    analyser.getFloatTimeDomainData(buf);
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    if (s > 1e-9) heard = true;
+    const db = 20 * Math.log10(Math.sqrt(s / buf.length) + 1e-8);
+    const v = Math.max(0, Math.min(100, (db + 70) / 60 * 100));
+    level = v > level ? level * 0.6 + v * 0.4 : level * 0.9 + v * 0.1;
+    return level;
+  }
+
+  function fmt(ms){
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+  }
+
+  function updateCount(){ $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; $("take").disabled = earned <= 0; }
+
+  function gain(){
+    if (earned >= FEATHERS) return;
+    const f = feathers[earned];
+    f.classList.remove("fall", "plucked");
+    void f.getBBox();
+    f.classList.add("on");
+    earned++; updateCount();
+    if (earned === FEATHERS) celebrate();
+  }
+  function lose(){
+    if (earned <= 0) return;
+    earned--;
+    const f = feathers[earned];
+    f.classList.remove("on");
+    f.classList.add("fall");
+    updateCount();
+  }
+
+  const LINES = {
+    calm: ["Ho ho ho! Nice and quiet!", "Silent night… just right.", "You’re on the nice list!", "Jolly good work!", "Shh… the reindeer are napping."],
+    warn: ["Getting louder…", "Hmm… naughty or nice?", "Easy now…"],
+    loud: ["Too loud! My presents!", "HO HO… NO!!", "You’ll wake the reindeer!", "Who’s making that racket?!"]
+  };
+  const MSG_EVERY = {calm: 6000, warn: 3500, loud: 2000};
+  let mood = "calm", lastMsgAt = 0, angryUntil = 0, micOff = false, stickyUntil = 0;
+
+  let lastMood = "";
+  function setMood(m){
+    if (m === lastMood) return;
+    if (m === "loud" && running) loudGobble();
+    lastMood = m; mood = m;
+    const t = $("turkey"), meter = $("meter");
+    t.classList.remove("calm","warn","loud"); t.classList.add(m);
+    meter.classList.remove("warn","loud"); if (m !== "calm") meter.classList.add(m);
+    if (!warned && !micOff && performance.now() > stickyUntil) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
+  }
+
+  // Santa movement: strolls around when calm, paces when warn, runs around angrily when loud.
+  const turkeyEl = $("turkey"), stageEl = document.querySelector(".stage"), bubbleEl = $("bubble");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let holdTurkey = false, holdFace = 1;
+  let tx = 0, tv = 0, target = 0, facing = 1, pauseUntil = 0, retargetAt = 0, motionLast = performance.now();
+
+  function pickTarget(range){
+    if (range < 20) return 0;
+    let n = 0;
+    for (let i = 0; i < 8; i++) { n = (Math.random() * 2 - 1) * range; if (Math.abs(n - tx) > range * 0.35) break; }
+    return n;
+  }
+
+  function motion(now){
+    const dt = Math.min(0.1, (now - motionLast) / 1000); motionLast = now;
+    const W = stageEl.clientWidth;
+    const range = Math.max(0, W / 2 - turkeyEl.getBoundingClientRect().width * 0.42 - 12);
+    let moving = false;
+    if (reduceMotion.matches) {
+      tx = 0; tv = 0;
+    } else {
+      const speed = W * (mood === "loud" ? 0.55 : mood === "warn" ? 0.14 : 0.07);
+      if (Math.abs(target) > range) target = Math.sign(target) * range;
+      let desired = 0;
+      if (!(mood === "calm" && now < pauseUntil)) {
+        const arrived = Math.abs(target - tx) < Math.max(6, speed * 0.08);
+        if (arrived) {
+          if (mood === "calm") pauseUntil = now + 1200 + Math.random() * 2200;
+          target = pickTarget(range);
+          retargetAt = now + 300 + Math.random() * 600;
+        } else if (mood === "loud" && now > retargetAt) {
+          target = pickTarget(range);
+          retargetAt = now + 300 + Math.random() * 600;
+        }
+        if (!(mood === "calm" && now < pauseUntil)) desired = Math.sign(target - tx) * speed;
+      }
+      if (holdTurkey || now < danceUntil) desired = 0;
+      tv += (desired - tv) * Math.min(1, dt * (mood === "loud" ? 10 : 5));
+      tx += tv * dt;
+      if (tx > range) { tx = range; tv = Math.min(0, tv); }
+      if (tx < -range) { tx = -range; tv = Math.max(0, tv); }
+      if (holdTurkey) facing = holdFace;
+      else if (Math.abs(tv) > 4) facing = tv > 0 ? 1 : -1;
+      moving = Math.abs(tv) > W * 0.01 || mood === "loud";
+    }
+    turkeyEl.classList.toggle("moving", moving);
+    turkeyEl.classList.toggle("pose", !moving && mood === "calm" && !reduceMotion.matches);
+    turkeyEl.classList.toggle("face-r", facing > 0);
+    turkeyEl.classList.toggle("face-l", facing < 0);
+    turkeyEl.style.transform = `translateX(${tx.toFixed(1)}px)`;
+
+    const bLim = Math.max(0, W / 2 - bubbleEl.offsetWidth / 2 - 8);
+    const bx = Math.max(-bLim, Math.min(bLim, tx));
+    bubbleEl.style.left = `calc(50% + ${bx.toFixed(1)}px)`;
+
+    if (!warned && !micOff && now > stickyUntil && now - lastMsgAt > MSG_EVERY[mood]) {
+      const list = LINES[mood];
+      let next = list[Math.floor(Math.random() * list.length)];
+      if (next === bubbleEl.textContent) next = list[(list.indexOf(next) + 1) % list.length];
+      bubbleEl.textContent = next;
+      lastMsgAt = now;
+    }
+    requestAnimationFrame(motion);
+  }
+  requestAnimationFrame(motion);
+
+  // ---------- Time of day: dawn -> day -> sunset -> night, looping slowly ----------
+  const DAY_MS = 8 * 60 * 1000;
+  const SKY = [ // t (0 = sunrise), sky top, sky bottom, land tint, tint strength, stars, clouds
+    [0.00, "#A9BCE6", "#F5C9C9", "#7383C0", .2,  .2,  .8],
+    [0.08, "#BFDDF4", "#EAF4FB", "#000000", 0,   0,   1],
+    [0.50, "#BFDDF4", "#EAF4FB", "#000000", 0,   0,   1],
+    [0.58, "#5E5A9C", "#F0A0A8", "#6A4A8C", .25, .15, .7],
+    [0.66, "#0E1838", "#1F2F5A", "#101C45", .5,  1,   .25],
+    [0.92, "#0E1838", "#1F2F5A", "#101C45", .5,  1,   .25],
+    [1.00, "#A9BCE6", "#F5C9C9", "#7383C0", .2,  .2,  .8]
+  ];
+  const hex = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+  const css = c => `rgb(${c.map(Math.round).join(",")})`;
+  const STORM = hex("#9AA4B2");
+  const appEl = $("app"), sunEl = $("sun"), moonEl = $("moon"), starsEl = $("stars"), cloudsEl = $("clouds"), todEl = $("todMatrix");
+  for (let i = 0; i < 45; i++) {
+    const c = document.createElementNS(ns, "circle");
+    c.setAttribute("cx", (Math.random() * 1200).toFixed(0));
+    c.setAttribute("cy", (10 + Math.random() * 280).toFixed(0));
+    c.setAttribute("r", (1 + Math.random() * 2).toFixed(1));
+    starsEl.appendChild(c);
+  }
+  const dayStart = performance.now() - 0.12 * DAY_MS; // open in the morning
+  let rainAmt = 0;
+
+  function paintSky(now){
+    const t = ((now - dayStart) % DAY_MS) / DAY_MS;
+    let k = 0; while (k < SKY.length - 2 && t > SKY[k + 1][0]) k++;
+    const A = SKY[k], B = SKY[k + 1], f = (t - A[0]) / (B[0] - A[0] || 1);
+    const r = rainAmt;
+    let top = mix(hex(A[1]), hex(B[1]), f), bot = mix(hex(A[2]), hex(B[2]), f);
+    top = mix(top, STORM, r * .55); bot = mix(bot, STORM, r * .45);
+    document.body.style.background = `linear-gradient(180deg, ${css(top)} 0%, ${css(bot)} 70%)`;
+    const tintA = A[4] + (B[4] - A[4]) * f, tint = mix(hex(A[3]), hex(B[3]), f);
+    // Blend the land toward the tint color, plus a gray wash when it rains
+    let tc = tint.map(v => v / 255), ta = tintA;
+    if (r > 0) { tc = tc.map((v, i) => (v * ta + (STORM[i] / 255) * r * .25) / (ta + r * .25)); ta = Math.min(.7, ta + r * .25); }
+    const g = (1 - ta).toFixed(3);
+    todEl.setAttribute("values", `${g} 0 0 0 ${(tc[0] * ta).toFixed(3)}  0 ${g} 0 0 ${(tc[1] * ta).toFixed(3)}  0 0 ${g} 0 ${(tc[2] * ta).toFixed(3)}  0 0 0 1 0`);
+    starsEl.setAttribute("opacity", ((A[5] + (B[5] - A[5]) * f) * (1 - r)).toFixed(2));
+    $("aurora").setAttribute("opacity", ((A[5] + (B[5] - A[5]) * f) * (1 - r) * .9).toFixed(2));
+    cloudsEl.setAttribute("opacity", ((A[6] + (B[6] - A[6]) * f) * (1 - r * .6)).toFixed(2));
+    // Sun arcs across during the day; moon at night. Both sink behind the hills.
+    const su = (t + 0.03) / 0.66;
+    if (su >= 0 && su <= 1) {
+      sunEl.setAttribute("cx", (60 + su * 1080).toFixed(1));
+      sunEl.setAttribute("cy", (420 - Math.sin(Math.PI * su) * 320).toFixed(1));
+      sunEl.setAttribute("opacity", (1 - r * .7).toFixed(2));
+    } else sunEl.setAttribute("opacity", "0");
+    const mu = ((t - 0.6 + 1) % 1) / 0.44;
+    if (mu <= 1) {
+      moonEl.setAttribute("transform", `translate(${(80 + mu * 1040).toFixed(1)} ${(420 - Math.sin(Math.PI * mu) * 320).toFixed(1)})`);
+      moonEl.setAttribute("opacity", (1 - r * .7).toFixed(2));
+    } else moonEl.setAttribute("opacity", "0");
+    const lum = (.299 * top[0] + .587 * top[1] + .114 * top[2]) / 255;
+    appEl.classList.toggle("sky-dark", lum < .5);
+    appEl.classList.toggle("sky-light", lum >= .5);
+  }
+
+  // ---------- Weather: every so often, a gust of leaves or a rain shower ----------
+  const cv = $("weather"), ctx = cv.getContext("2d");
+  const LEAF_COLORS = ["#C8452B", "#D8662A", "#E3A12F", "#A3283F", "#B5762E"];
+  let leaves = [], drops = [], splashes = [];
+  let event = null, nextEventAt = performance.now() + 20000 + Math.random() * 25000;
+  const pilEl = $("pilgrim"), pilBody = $("pilBody"), pilLegA = $("pilLegA"), pilLegB = $("pilLegB"), pilHat = $("pilHat");
+  let pil = null, nextPilAt = performance.now() + 30000 + Math.random() * 30000;
+  function startPilgrim(){
+    const dir = Math.random() < .5 ? 1 : -1;
+    pil = {dir, x: dir > 0 ? -80 : 1280, speed: 46 + Math.random() * 14, ph: 0};
+    pilEl.style.display = "";
+  }
+  window.gobblePilgrim = startPilgrim; // handy for trying it out from the console
+  function walkPilgrim(now, dt){
+    if (!pil && now > nextPilAt && !reduceMotion.matches && !pk) startPilgrim();
+    if (!pil) return;
+    pil.x += pil.dir * pil.speed * dt;
+    pil.ph += dt * pil.speed / 9;
+    const sw = Math.sin(pil.ph) * 24, bob = -Math.abs(Math.cos(pil.ph)) * 3;
+    pilLegA.setAttribute("transform", `rotate(${sw.toFixed(1)} 0 -50)`);
+    pilLegB.setAttribute("transform", `rotate(${(-sw).toFixed(1)} 0 -50)`);
+    pilBody.setAttribute("transform", `translate(0 ${bob.toFixed(1)})`);
+    // Tip his hat to the turkey as he passes the middle
+    const d = Math.abs(pil.x - 600), tip = d < 90 ? Math.sin((1 - d / 90) * Math.PI / 2) : 0;
+    pilHat.setAttribute("transform", `translate(0 ${(-9 * tip).toFixed(1)}) rotate(${(-22 * tip).toFixed(1)} 2 -122)`);
+    pilEl.setAttribute("transform", `translate(${pil.x.toFixed(1)} 480) scale(${1.05 * pil.dir} 1.05)`);
+    if (pil.x < -100 || pil.x > 1300) {
+      pil = null; pilEl.style.display = "none";
+      nextPilAt = now + 60000 + Math.random() * 90000;
+    }
+  }
+  let lastSky = 0, wLast = performance.now(), dpr = 1, groundTop = 0, groundBot = 0;
+
+  function sizeCanvas(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = appEl.clientWidth, h = appEl.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    // Where the field is: the farm picture is anchored to the bottom of the stage.
+    const sr = stageEl.getBoundingClientRect(), ar = appEl.getBoundingClientRect();
+    const scale = Math.max(sr.width / 1200, sr.height / 600);
+    groundBot = sr.bottom - ar.top;
+    groundTop = groundBot - (600 - 465) * scale;
+  }
+
+  function startEvent(now, type){
+    const rain = type ? type === "rain" : Math.random() < 0.45;
+    const dur = rain ? 20000 + Math.random() * 15000 : 9000 + Math.random() * 7000;
+    event = {type: rain ? "rain" : "leaves", start: now, end: now + dur, wind: 40 + Math.random() * 80, spawnAcc: 0};
+  }
+  window.gobbleWeather = type => startEvent(performance.now(), type); // handy for trying it out from the console
+
+  function spawnLeaf(W, wind){
+    leaves.push({
+      x: -0.15 * W + Math.random() * W * 1.05, y: -20 - Math.random() * 40,
+      vy: 30 + Math.random() * 35, wind: wind * .5, sway: 20 + Math.random() * 30, ph: Math.random() * 6.28,
+      rot: Math.random() * 6.28, vrot: (Math.random() - .5) * 4, flip: Math.random() * 6.28,
+      size: 9 + Math.random() * 8, color: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+      land: groundTop + Math.random() * (groundBot - groundTop - 10), landedAt: 0
+    });
+  }
+
+  function drawLeaf(L, alpha){
+    // A snowflake: big ones get six arms, small ones are soft dots
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(L.x, L.y);
+    const r = L.size * .32;
+    if (L.size > 13 && !L.landedAt) {
+      ctx.rotate(L.rot);
+      ctx.lineCap = "round";
+      for (const [w, c] of [[4, "rgba(110,140,175,.7)"], [2, "#FFFFFF"]]) {
+        ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = k * Math.PI / 3, x = Math.cos(a) * r * 2, y = Math.sin(a) * r * 2;
+          ctx.moveTo(0, 0); ctx.lineTo(x, y);
+          ctx.moveTo(x * .55 + Math.cos(a + .7) * r * .6, y * .55 + Math.sin(a + .7) * r * .6);
+          ctx.lineTo(x * .55, y * .55);
+          ctx.lineTo(x * .55 + Math.cos(a - .7) * r * .6, y * .55 + Math.sin(a - .7) * r * .6);
+        }
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.29);
+      ctx.fillStyle = "#FFFFFF"; ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = "rgba(110,140,175,.6)"; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function weather(now){
+    const dt = Math.min(.1, (now - wLast) / 1000); wLast = now;
+    sizeCanvas();
+    const W = cv.width / dpr, H = cv.height / dpr;
+    const still = reduceMotion.matches;
+
+    if (!event && now > nextEventAt) startEvent(now);
+    let rainTarget = 0;
+    if (event) {
+      const fadeIn = Math.min(1, (now - event.start) / 3000), fadeOut = Math.min(1, (event.end - now) / 3000);
+      const strength = Math.max(0, Math.min(fadeIn, fadeOut));
+      if (event.type === "rain") rainTarget = strength;
+      else if (!still) {
+        event.spawnAcc += dt * 3.5 * strength * (W / 1200 + .4);
+        while (event.spawnAcc >= 1) { event.spawnAcc--; spawnLeaf(W, event.wind); }
+      }
+      if (now > event.end) { event = null; nextEventAt = now + 40000 + Math.random() * 80000; }
+    }
+    rainAmt += (rainTarget - rainAmt) * Math.min(1, dt * 1.5);
+    if (rainAmt < .002) rainAmt = 0;
+
+    if (now - lastSky > 200) { paintSky(now); lastSky = now; }
+    walkPilgrim(now, dt);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (!still) {
+      // Leaves drift down, swaying, then rest on the field and fade away.
+      leaves = leaves.filter(L => {
+        if (!L.landedAt) {
+          L.ph += dt * 2.2; L.flip += dt * 3;
+          L.x += (L.wind + Math.sin(L.ph) * L.sway) * dt;
+          L.y += L.vy * dt; L.rot += L.vrot * dt;
+          if (L.y >= L.land) { L.y = L.land; L.landedAt = now; }
+        }
+        const age = L.landedAt ? (now - L.landedAt) / 1000 : 0;
+        const alpha = age < 3 ? 1 : Math.max(0, 1 - (age - 3) / 3);
+        if (alpha <= 0 || L.x > W + 40) return false;
+        drawLeaf(L, alpha);
+        return true;
+      });
+
+      // Rain: gray clouds roll in across the top of the screen, then the drops
+      if (rainAmt > 0) {
+        ctx.fillStyle = `rgba(118,124,140,${(rainAmt * .92).toFixed(3)})`;
+        const n = Math.ceil(W / 160) + 2, drift = (now / 120) % 160;
+        ctx.beginPath();
+        ctx.rect(0, 0, W, 50);
+        for (let i = 0; i < n; i++) {
+          const cx = i * 160 - 80 + drift, cy = 55 + (i % 2) * 22;
+          ctx.moveTo(cx + 130, cy); ctx.ellipse(cx, cy, 130, 48, 0, 0, 6.29);
+        }
+        ctx.fill();
+      }
+      const want = Math.round(rainAmt * W / 3.5);
+      // Snowstorm: lots of flakes blowing sideways
+      while (drops.length < want) drops.push({x: Math.random() * W * 1.2 - W * .2, y: Math.random() * groundBot, v: 120 + Math.random() * 110, len: 1.6 + Math.random() * 2.6, ph: Math.random() * 6.28, land: groundTop + Math.random() * (groundBot - groundTop)});
+      if (drops.length > want) drops.length = want;
+      ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "rgba(110,140,175,.55)"; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const d of drops) {
+        d.ph += dt * 2;
+        d.y += d.v * dt; d.x += (d.v * .45 + Math.sin(d.ph) * 25) * dt;
+        if (d.y > d.land || d.x > W + 20) { d.y = -10 - Math.random() * 60; d.x = Math.random() * W * 1.2 - W * .2; }
+        ctx.moveTo(d.x + d.len, d.y); ctx.arc(d.x, d.y, d.len, 0, 6.29);
+      }
+      ctx.fill(); ctx.stroke();
+      splashes = splashes.filter(sp => {
+        sp.t += dt; if (sp.t > .3) return false;
+        ctx.globalAlpha = 1 - sp.t / .3;
+        ctx.beginPath(); ctx.ellipse(sp.x, sp.y, 2 + sp.t * 22, 1 + sp.t * 6, 0, 0, 6.29); ctx.stroke();
+        ctx.globalAlpha = 1; return true;
+      });
+    }
+    requestAnimationFrame(weather);
+  }
+  requestAnimationFrame(weather);
+
+  function loop(now){
+    if (!running) return;
+    const dt = Math.min(250, now - lastFrame); lastFrame = now;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const lv = micOff ? (level = 0) : readLevel();
+    const track = stream && stream.getAudioTracks()[0];
+    const silent = !micOff && (!heard || (track && track.muted));
+    if (silent && !warned && Date.now() - startedAt > 4000) {
+      warned = true;
+      $("bubble").textContent = "I can’t hear anything! Check the mic.";
+    } else if (!silent && warned) {
+      warned = false; lastMood = "";
+      if (micOff) $("bubble").textContent = "Mic is off. Break time!";
+    }
+    $("fill").style.width = lv + "%";
+    $("meter").setAttribute("aria-valuenow", Math.round(lv));
+
+    const deaf = performance.now() < deafUntil;
+    const loud = !micOff && !deaf && lv > limit, warn = !micOff && !deaf && lv > limit * 0.78;
+    if (loud) angryUntil = now + 1500;
+    setMood(loud || now < angryUntil ? "loud" : warn ? "warn" : "calm");
+
+    const left = pausedLeft !== null ? pausedLeft : endTime - Date.now();
+    $("time").textContent = fmt(left);
+    $("clock").classList.toggle("urgent", left <= 60000);
+
+    if (pausedLeft === null) {
+      if (micOff) {
+        // Mic paused: the clock keeps running, but feathers are frozen.
+      } else if (loud) {
+        loudMs += dt;
+        if (loudMs > 1200 && Date.now() - lastLoss > 4000) {
+          lose(); lastLoss = Date.now(); loudMs = 0;
+        }
+      } else {
+        loudMs = Math.max(0, loudMs - dt);
+        if (earned < FEATHERS) {
+          quietMs += dt;
+          if (quietMs >= interval) { quietMs = 0; gain(); }
+        }
+      }
+      $("nextBar").style.width = (earned >= FEATHERS ? 100 : quietMs / interval * 100) + "%";
+      if (left <= 0) { finish(); return; }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function finish(){
+    stopAudio();
+    $("time").textContent = "0:00";
+    $("finalCount").textContent = earned;
+    $("finalMsg").textContent =
+      earned >= FEATHERS ? "presents. A full sack! Ho ho ho!" :
+      earned >= 7 ? "presents. Great job keeping it calm!" :
+      earned >= 4 ? "presents. Let’s fill the sack next time." :
+      "presents. Let’s try for more next time.";
+    $("done").hidden = false;
+    $("again").focus();
+  }
+
+  $("start").onclick = () => { unlockSound(); start(); };
+  minsInput.addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+  $("again").onclick = () => { $("done").hidden = true; $("setup").hidden = false; minsInput.focus(); };
+  $("stop").onclick = () => { stopAudio(); $("setup").hidden = false; };
+  function setMic(off){
+    micOff = off;
+    const track = stream && stream.getAudioTracks()[0];
+    if (track) track.enabled = !off;
+    const b = $("mic");
+    b.textContent = off ? "Mic on" : "Mic off";
+    b.setAttribute("aria-pressed", String(off));
+    $("meter").classList.toggle("off", off);
+    $("fill").style.width = "0%";
+    if (off) { angryUntil = 0; warned = false; setMood("calm"); $("bubble").textContent = "Mic is off. Break time!"; }
+    else { heard = false; startedAt = Date.now(); lastMood = ""; lastMsgAt = 0; }
+  }
+  $("mic").onclick = () => setMic(!micOff);
+
+  // Teacher can award a feather for good behavior (button or the F key).
+  const GIFT_LINES = ["Ho ho ho! A new present!", "Thank you, class!", "Nice list for sure!", "Merry and bright!"];
+  function giveFeather(){
+    if (earned >= FEATHERS) return;
+    gain();
+    const sc = document.querySelector(".score");
+    sc.classList.remove("bump"); void sc.offsetWidth; sc.classList.add("bump");
+    if (!warned && !micOff) {
+      if (earned < FEATHERS) {
+        $("bubble").textContent = GIFT_LINES[Math.floor(Math.random() * GIFT_LINES.length)];
+        lastMsgAt = performance.now();
+      }
+    }
+  }
+  $("give").onclick = giveFeather;
+
+  // ---------- Take a present: an elf walks up and grabs one ----------
+  // ---------- Gobble sound ----------
+  // Plays santa.mp3 if it is next to this page; otherwise built-in synthesized sleigh bells.
+  let outCtx = null, soundOn = true, deafUntil = 0, nextLoudGobble = 0, danceUntil = 0;
+  try { soundOn = localStorage.getItem("gobble-sound") !== "off"; } catch(e){}
+  const gobbleFile = new Audio("santa.mp3");
+  let gobbleFileOk = false;
+  gobbleFile.preload = "auto";
+  gobbleFile.addEventListener("canplaythrough", () => { gobbleFileOk = true; });
+  gobbleFile.addEventListener("error", () => { gobbleFileOk = false; });
+
+  function unlockSound(){
+    try {
+      if (!outCtx) outCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (outCtx.state === "suspended") outCtx.resume();
+    } catch(e){}
+  }
+
+  function synthGobble(){
+    // Sleigh bells: quick jingly shakes of bright, slightly out-of-tune bells
+    if (!outCtx) return 0;
+    const ctx = outCtx, t0 = ctx.currentTime + .02, out = ctx.createGain();
+    out.gain.value = .3; out.connect(ctx.destination);
+    const hits = [0, .06, .12, .18, .24, .42, .48, .54, .60, .66, .72];
+    hits.forEach((h, i) => {
+      [2650, 3950, 5350].forEach((f, j) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), t = t0 + h + (j * .004);
+        o.type = "sine"; o.frequency.value = f * (1 + (Math.random() - .5) * .05);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(.5 / (j + 1), t + .004);
+        g.gain.exponentialRampToValueAtTime(.001, t + .22 + (i === hits.length - 1 ? .4 : 0));
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + .7);
+      });
+    });
+    return 1100;
+  }
+
+  function playGobble(){
+    if (!soundOn) return;
+    unlockSound();
+    let ms = 0;
+    if (gobbleFileOk) {
+      try {
+        gobbleFile.currentTime = 0;
+        gobbleFile.play().catch(() => synthGobble());
+        ms = (isFinite(gobbleFile.duration) ? gobbleFile.duration : 1.2) * 1000;
+      } catch(e) { ms = synthGobble(); }
+    } else ms = synthGobble();
+    deafUntil = Math.max(deafUntil, performance.now() + ms + 600);
+  }
+
+  function loudGobble(){
+    const now = performance.now();
+    if (now < nextLoudGobble) return;
+    nextLoudGobble = now + 6000;
+    playGobble();
+  }
+
+  function setSound(on){
+    soundOn = on;
+    try { localStorage.setItem("gobble-sound", on ? "on" : "off"); } catch(e){}
+    const b = $("sound");
+    b.textContent = on ? "Sound off" : "Sound on";
+    b.setAttribute("aria-pressed", String(!on));
+  }
+  setSound(soundOn);
+  $("sound").onclick = () => { unlockSound(); setSound(!soundOn); };
+
+  // ---------- Full tail: dance! ----------
+  function celebrate(){
+    say("A FULL SACK! HO HO HO!");
+    stickyUntil = performance.now() + 5500;
+    if (reduceMotion.matches) return;
+    danceUntil = performance.now() + 5300;
+    turkeyEl.classList.remove("dance"); void turkeyEl.getBBox(); turkeyEl.classList.add("dance");
+    setTimeout(() => turkeyEl.classList.remove("dance"), 5300);
+  }
+
+  const PLUCK_LINES = ["Hey! That’s for the nice list!", "Not that present!", "Oh no, the elf took one!", "Come back, little elf!"];
+  const pluckSvg = $("plucker");
+  (() => {
+    const clone = $("pilgrim").cloneNode(true);
+    clone.removeAttribute("style");
+    clone.querySelectorAll("[id]").forEach(n => n.id = "pk" + n.id.slice(3));
+    clone.id = "pkRoot";
+    pluckSvg.appendChild(clone);
+    // a feather he can carry off
+    const held = document.createElementNS(ns, "g");
+    held.id = "pkHeld"; held.style.display = "none";
+    held.innerHTML = '<rect x="3" y="-88" width="24" height="20" rx="2" stroke="#3B2314" stroke-width="2.5"/>' +
+                     '<rect x="12" y="-88" width="6" height="20" fill="#F4D35E" stroke="#3B2314" stroke-width="1.2"/>' +
+                     '<path d="M15 -88 c-7 -9 -13 -2 0 0 c13 -2 7 -9 0 0" fill="#F4D35E" stroke="#3B2314" stroke-width="1.5"/>';
+    $("pkArm").insertBefore(held, $("pkHand"));
+    $("pkFork").style.display = "none";
+  })();
+  const pkRoot = $("pkRoot"), pkBody = $("pkBody"), pkLegA = $("pkLegA"), pkLegB = $("pkLegB"), pkArm = $("pkArm"), pkHand = $("pkHand"), pkHeld = $("pkHeld"), pkHat = $("pkHat");
+  let pk = null, pendingPlucks = 0, pkLast = 0;
+
+  function say(text){ if (!warned) { $("bubble").textContent = text; lastMsgAt = performance.now(); stickyUntil = lastMsgAt + 2500; } }
+
+  function pluckOne(){
+    if (earned <= 0) return null;
+    earned--;
+    const f = feathers[earned];
+    f.classList.remove("on", "fall");
+    f.classList.add("plucked");
+    updateCount();
+    return f;
+  }
+
+  function takeFeather(){
+    if (earned - pendingPlucks <= 0) return;
+    if (reduceMotion.matches) { pluckOne(); say(PLUCK_LINES[0]); return; }
+    pendingPlucks++;
+    if (!pk) startPluck();
+  }
+
+  function startPluck(){
+    // Send the background walker home; it's the same farmer.
+    if (pil) { pil = null; pilEl.style.display = "none"; nextPilAt = performance.now() + 60000; }
+    const i = Math.max(0, earned - 1);
+    const side = i < FEATHERS / 2 ? -1 : 1;           // come from the side the feather is on
+    const W = stageEl.clientWidth;
+    pk = {phase: "enter", side, x: side * (W / 2 + 140), ph: 0, t0: 0, plucked: false, arm: 0};
+    holdTurkey = true; holdFace = side;
+    pluckSvg.style.display = "block";
+    pkHeld.style.display = "none";
+    say("Uh oh… here comes an elf!");
+    pkLast = performance.now();
+    requestAnimationFrame(pluckLoop);
+  }
+
+  function flyFeather(f, fromSvgEl, toEl, toPoint, color){
+    const sr = stageEl.getBoundingClientRect();
+    const a = new DOMPoint(200, 108).matrixTransform(fromSvgEl.getScreenCTM());
+    const b = new DOMPoint(toPoint[0], toPoint[1]).matrixTransform(toEl.getScreenCTM());
+    const k = turkeyEl.getBoundingClientRect().height / 360;
+    const el = document.createElementNS(ns, "svg");
+    el.setAttribute("class", "flying-feather");
+    el.setAttribute("width", 60 * k); el.setAttribute("height", 190 * k);
+    el.setAttribute("viewBox", "-30 -95 60 190");
+    el.innerHTML = presentSvg(color, RIBBONS[COLORS.indexOf(color)] || "#F4D35E");
+    stageEl.appendChild(el);
+    const off = (x, y) => `translate(${x - sr.left - 30 * k}px, ${y - sr.top - 95 * k}px)`;
+    const angle = 0;
+    const anim = el.animate([
+      {transform: `${off(a.x, a.y)} rotate(${angle}deg) scale(1)`},
+      {transform: `${off((a.x + b.x) / 2, Math.min(a.y, b.y) - 60 * k)} rotate(${angle / 2 - 20}deg) scale(.7)`, offset: .45},
+      {transform: `${off(b.x, b.y)} rotate(0deg) scale(.42)`}
+    ], {duration: 450, easing: "ease-in-out", fill: "forwards"});
+    anim.onfinish = () => el.remove();
+  }
+
+  function pluckLoop(now){
+    if (!pk) return;
+    const dt = Math.min(.1, (now - pkLast) / 1000); pkLast = now;
+    const W = stageEl.clientWidth, H = stageEl.clientHeight;
+    const k = turkeyEl.getBoundingClientRect().height / 360;   // turkey units -> px
+    const s = k * 1.5;                                          // farmer units -> px (about turkey-sized)
+    const standX = tx + pk.side * 150 * k;
+    const speed = Math.max(220, W * .3);
+    let walking = false, facing = -pk.side;
+
+    if (pk.phase === "enter") {
+      walking = true;
+      const d = standX - pk.x;
+      if (Math.abs(d) < speed * dt + 2) { pk.x = standX; pk.phase = "reach"; pk.t0 = now; pk.plucked = false; }
+      else pk.x += Math.sign(d) * speed * dt;
+    } else if (pk.phase === "reach") {
+      pk.x = standX;
+      const t = (now - pk.t0) / 350;
+      pk.arm = -115 * Math.min(1, t);
+      if (t >= 1 && !pk.plucked) {
+        pk.plucked = true;
+        playGobble();
+        const i = earned - 1;
+        if (i >= 0) {
+          const color = COLORS[i % COLORS.length];
+          pkArm.setAttribute("transform", `rotate(${pk.arm} 2 -92)`);
+          flyFeather(feathers[i], feathers[i], pkHand, [15, -64], color);
+          pluckOne();
+          pkHeld.setAttribute("fill", color);
+          setTimeout(() => { if (pk) pkHeld.style.display = ""; }, 420);
+          say(PLUCK_LINES[Math.floor(Math.random() * PLUCK_LINES.length)]);
+          turkeyEl.classList.remove("yelp"); void turkeyEl.getBBox(); turkeyEl.classList.add("yelp");
+          setTimeout(() => turkeyEl.classList.remove("yelp"), 750);
+        }
+        pendingPlucks = Math.max(0, pendingPlucks - 1);
+        pk.phase = "hold"; pk.t0 = now;
+      }
+    } else if (pk.phase === "hold") {
+      pk.x = standX;
+      const t = now - pk.t0;
+      if (t > 450) pk.arm = -115 * Math.max(0, 1 - (t - 450) / 400);
+      if (t > 1100) {
+        if (pendingPlucks > 0 && earned > 0) { pk.phase = "reach"; pk.t0 = now; pk.plucked = false; }
+        else { pendingPlucks = 0; pk.phase = "leave"; holdTurkey = false; }
+      }
+    } else if (pk.phase === "leave") {
+      walking = true; facing = pk.side;
+      pk.x += pk.side * speed * dt;
+      if (Math.abs(pk.x) > W / 2 + 160) {
+        pk = null; pluckSvg.style.display = "none";
+        if (pendingPlucks > 0 && earned > 0) startPluck(); else pendingPlucks = 0;
+        return;
+      }
+    }
+
+    if (walking) pk.ph += dt * 9; else pk.ph = 0;
+    const sw = Math.sin(pk.ph) * 24, bob = walking ? -Math.abs(Math.cos(pk.ph)) * 3 : 0;
+    pkLegA.setAttribute("transform", `rotate(${sw.toFixed(1)} 0 -50)`);
+    pkLegB.setAttribute("transform", `rotate(${(-sw).toFixed(1)} 0 -50)`);
+    pkBody.setAttribute("transform", `translate(0 ${bob.toFixed(1)})`);
+    pkArm.setAttribute("transform", `rotate(${pk.arm.toFixed(1)} 2 -92)`);
+    pkHeld.setAttribute("transform", `rotate(${(-pk.arm).toFixed(1)} 15 -64)`); // keep the feather upright in his hand
+    pkHat.removeAttribute("transform");
+    pkRoot.setAttribute("transform", `scale(${facing} 1)`);
+    pluckSvg.style.width = (150 * s) + "px";
+    pluckSvg.style.height = (172 * s) + "px";
+    pluckSvg.style.left = (W / 2 + pk.x - 75 * s) + "px";
+    pluckSvg.style.bottom = Math.max(0, 22 * k - 7 * s) + "px";
+    requestAnimationFrame(pluckLoop);
+  }
+  $("take").onclick = takeFeather;
+  document.addEventListener("keydown", e => {
+    if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey &&
+        !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) &&
+        $("setup").hidden && $("done").hidden) giveFeather();
+    if ((e.key === "t" || e.key === "T") && !e.ctrlKey && !e.metaKey && !e.altKey &&
+        !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) &&
+        $("setup").hidden && $("done").hidden) takeFeather();
+  });
+  $("pause").onclick = () => {
+    if (pausedLeft === null) { pausedLeft = Math.max(0, endTime - Date.now()); $("pause").textContent = "Resume"; $("timeSub").textContent = "paused"; }
+    else { endTime = Date.now() + pausedLeft; pausedLeft = null; $("pause").textContent = "Pause"; $("timeSub").textContent = "left in class"; }
+  };
+  function adjust(ms){
+    if (pausedLeft !== null) pausedLeft = Math.max(1000, pausedLeft + ms);
+    else endTime = Math.max(Date.now() + 1000, endTime + ms);
+  }
+  $("plus").onclick = () => adjust(60000);
+  $("minus").onclick = () => adjust(-60000);
+  $("full").onclick = () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch(e){}
+  };
+})();
+</script>
+</body>
+</html>

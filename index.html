@@ -51,6 +51,12 @@ button{cursor:pointer}
 .app.sky-dark .top{--ink:#F7EAD0;--muted:#E6D6BA;--sky:#2A2342}
 .app.sky-light .top{--ink:#3B2314;--muted:#6E5644;--sky:#F8E9B8}
 .top{color:var(--ink);transition:color 1s}
+.tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.tabs a{border:2px solid var(--ink);border-radius:999px;padding:.2rem .85rem;font-weight:700;font-size:.95rem;color:var(--ink);text-decoration:none;white-space:nowrap}
+.tabs a:hover{background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.top .tabs a[aria-current=page]{background:var(--ink);color:var(--sky)}
+.card .tabs{margin:0 0 1rem}
+.card .tabs a[aria-current=page]{background:var(--ink);color:var(--panel)}
 .display{font-family:"Grandstander","Comic Sans MS","Chalkboard SE",system-ui,sans-serif}
 
 .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
@@ -203,7 +209,13 @@ input[type=range]{accent-color:var(--gold);width:100%}
 <body>
 <div class="app" id="app">
   <header class="top">
-    <h1 class="brand display">Gobble Meter</h1>
+    <div>
+      <h1 class="brand display">Gobble Meter</h1>
+      <nav class="tabs" aria-label="Choose a meter">
+        <a href="index.html" aria-current="page">Gobble Meter</a>
+        <a href="santa.html">Santa Meter</a>
+      </nav>
+    </div>
     <div class="clock display" id="clock">
       <div class="time" id="time">--:--</div>
       <div class="sub" id="timeSub">left in class</div>
@@ -401,6 +413,10 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   <div class="overlay" id="setup">
     <div class="card">
+      <nav class="tabs" aria-label="Choose a meter">
+        <a href="index.html" aria-current="page">Gobble Meter</a>
+        <a href="santa.html">Santa Meter</a>
+      </nav>
       <h2 class="display">Gobble Meter</h2>
       <p>Stay under the loudness limit to grow the turkey’s tail feathers. If the room gets too loud, a feather falls off.</p>
       <label class="q" for="minsInput">How many minutes are left in class?</label>
