@@ -62,6 +62,10 @@ button{cursor:pointer}
 .meter-pick::after{content:"";position:absolute;right:.85rem;top:50%;width:.45rem;height:.45rem;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 .meter-pick select option{color:#222;background:#fff}
 .card .meter-pick{margin:0 0 1rem}
+.title-pick{margin:0;display:inline-block;position:relative}
+.title-pick select{font-family:inherit;font-size:inherit;font-weight:inherit;line-height:1.1;border:0;border-radius:.6rem;padding:0 1.25em 0 0;field-sizing:content;max-width:100%}
+.title-pick select:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.title-pick::after{right:.25em;width:.32em;height:.32em;border-width:0 .09em .09em 0;border-style:solid;border-color:var(--ink)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .twinkle{animation:twinkle 1.6s ease-in-out infinite}
 @keyframes twinkle{50%{opacity:.3}}
@@ -235,18 +239,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
 <body>
 <div class="app" id="app">
   <header class="top">
-    <div>
-      <h1 class="brand display">Dream Meter</h1>
-      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
-        <select onchange="location.href=this.value">
-          <option value="index.html">Thanksgiving</option>
-          <option value="santa.html">Christmas</option>
-          <option value="mlk.html" selected>MLK Day</option>
-          <option value="washington.html">Presidents’ Day</option>
-          <option value="easter.html">Easter</option>
-        </select>
-      </label>
-    </div>
+    <h1 class="brand display"><label class="meter-pick title-pick"><span class="sr-only">Choose a holiday meter</span>
+          <select onchange="location.href=this.value">
+            <option value="index.html">Gobble Meter</option>
+            <option value="santa.html">Santa Meter</option>
+            <option value="mlk.html" selected>Dream Meter</option>
+            <option value="washington.html">Washington Meter</option>
+            <option value="easter.html">Bunny Meter</option>
+          </select>
+        </label></h1>
     <div class="clock display" id="clock">
       <div class="time" id="time">--:--</div>
       <div class="sub" id="timeSub">left in class</div>
@@ -472,16 +473,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   <div class="overlay" id="setup">
     <div class="card">
-      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
-        <select onchange="location.href=this.value">
-          <option value="index.html">Thanksgiving</option>
-          <option value="santa.html">Christmas</option>
-          <option value="mlk.html" selected>MLK Day</option>
-          <option value="washington.html">Presidents’ Day</option>
-          <option value="easter.html">Easter</option>
-        </select>
-      </label>
-      <h2 class="display">Dream Meter</h2>
+      <h2 class="display"><label class="meter-pick title-pick"><span class="sr-only">Choose a holiday meter</span>
+          <select onchange="location.href=this.value">
+            <option value="index.html">Gobble Meter</option>
+            <option value="santa.html">Santa Meter</option>
+            <option value="mlk.html" selected>Dream Meter</option>
+            <option value="washington.html">Washington Meter</option>
+            <option value="easter.html">Bunny Meter</option>
+          </select>
+        </label></h2>
       <p>Stay under the loudness limit and hands of many colors join together for the dream. If the room gets too loud, a hand lets go.</p>
       <blockquote class="quote">“Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that.”
         <cite>— Martin Luther King Jr., <i>Strength to Love</i> (1963)</cite></blockquote>

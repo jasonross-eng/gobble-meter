@@ -62,6 +62,10 @@ button{cursor:pointer}
 .meter-pick::after{content:"";position:absolute;right:.85rem;top:50%;width:.45rem;height:.45rem;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 .meter-pick select option{color:#222;background:#fff}
 .card .meter-pick{margin:0 0 1rem}
+.title-pick{margin:0;display:inline-block;position:relative}
+.title-pick select{font-family:inherit;font-size:inherit;font-weight:inherit;line-height:1.1;border:0;border-radius:.6rem;padding:0 1.25em 0 0;field-sizing:content;max-width:100%}
+.title-pick select:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.title-pick::after{right:.25em;width:.32em;height:.32em;border-width:0 .09em .09em 0;border-style:solid;border-color:var(--ink)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .aur1{animation:aur 14s ease-in-out infinite alternate}
 .aur2{animation:aur 10s ease-in-out infinite alternate-reverse}
@@ -223,18 +227,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
 <body>
 <div class="app" id="app">
   <header class="top">
-    <div>
-      <h1 class="brand display">Bunny Meter</h1>
-      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
-        <select onchange="location.href=this.value">
-          <option value="index.html">Thanksgiving</option>
-          <option value="santa.html">Christmas</option>
-          <option value="mlk.html">MLK Day</option>
-          <option value="washington.html">Presidents’ Day</option>
-          <option value="easter.html" selected>Easter</option>
-        </select>
-      </label>
-    </div>
+    <h1 class="brand display"><label class="meter-pick title-pick"><span class="sr-only">Choose a holiday meter</span>
+          <select onchange="location.href=this.value">
+            <option value="index.html">Gobble Meter</option>
+            <option value="santa.html">Santa Meter</option>
+            <option value="mlk.html">Dream Meter</option>
+            <option value="washington.html">Washington Meter</option>
+            <option value="easter.html" selected>Bunny Meter</option>
+          </select>
+        </label></h1>
     <div class="clock display" id="clock">
       <div class="time" id="time">--:--</div>
       <div class="sub" id="timeSub">left in class</div>
@@ -567,16 +568,15 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   <div class="overlay" id="setup">
     <div class="card">
-      <label class="meter-pick"><span class="sr-only">Choose a holiday meter</span>
-        <select onchange="location.href=this.value">
-          <option value="index.html">Thanksgiving</option>
-          <option value="santa.html">Christmas</option>
-          <option value="mlk.html">MLK Day</option>
-          <option value="washington.html">Presidents’ Day</option>
-          <option value="easter.html" selected>Easter</option>
-        </select>
-      </label>
-      <h2 class="display">Bunny Meter</h2>
+      <h2 class="display"><label class="meter-pick title-pick"><span class="sr-only">Choose a holiday meter</span>
+          <select onchange="location.href=this.value">
+            <option value="index.html">Gobble Meter</option>
+            <option value="santa.html">Santa Meter</option>
+            <option value="mlk.html">Dream Meter</option>
+            <option value="washington.html">Washington Meter</option>
+            <option value="easter.html" selected>Bunny Meter</option>
+          </select>
+        </label></h2>
       <p>Stay under the loudness limit to fill the Easter Bunny’s basket with eggs. If the room gets too loud, an egg rolls out.</p>
       <label class="q" for="minsInput">How many minutes are left in class?</label>
       <div class="mins"><input id="minsInput" type="number" min="1" max="180" value="20" inputmode="numeric"><span>minutes</span></div>
