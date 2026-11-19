@@ -81,6 +81,11 @@ svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visibl
 .score .n{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:900;line-height:1}
 .score .lbl{font-size:.95rem;color:var(--muted)}
 .next{height:10px;border-radius:999px;background:var(--meter-bg);margin-top:.45rem;overflow:hidden}
+.give{display:block;width:100%;margin-top:.55rem;border:0;border-radius:.7rem;padding:.4rem .6rem;background:var(--pumpkin);color:#FFF8E6;font-size:1rem;font-weight:800}
+.give:hover{filter:brightness(1.1)}
+.give:disabled{opacity:.45;cursor:default;filter:none}
+.score.bump{animation:bump .5s ease-out}
+@keyframes bump{30%{transform:scale(1.08)}}
 .next>i{display:block;height:100%;width:0;background:var(--gold);border-radius:999px;transition:width .3s linear}
 
 /* Turkey moods: struts cockily when calm, paces when warn, runs around angry when loud */
@@ -273,6 +278,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
       <div class="n display"><span id="count">0</span> / 10</div>
       <div class="lbl">tail feathers</div>
       <div class="next" title="Next feather"><i id="nextBar"></i></div>
+      <button class="give display" id="give" type="button" title="Give a feather for good behavior (shortcut: F)">+ Give a feather</button>
     </div>
     <div class="turkey-wrap">
       <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="Turkey whose tail feathers grow as the class stays quiet">
@@ -470,7 +476,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
     return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
   }
 
-  function updateCount(){ $("count").textContent = earned; }
+  function updateCount(){ $("count").textContent = earned; $("give").disabled = earned >= FEATHERS; }
 
   function gain(){
     if (earned >= FEATHERS) return;
@@ -836,6 +842,25 @@ input[type=range]{accent-color:var(--gold);width:100%}
     else { heard = false; startedAt = Date.now(); lastMood = ""; lastMsgAt = 0; }
   }
   $("mic").onclick = () => setMic(!micOff);
+
+  // Teacher can award a feather for good behavior (button or the F key).
+  const GIFT_LINES = ["Ooh, a new feather!", "Thank you, class!", "Looking good!", "Gobble-licious!"];
+  function giveFeather(){
+    if (earned >= FEATHERS) return;
+    gain();
+    const sc = document.querySelector(".score");
+    sc.classList.remove("bump"); void sc.offsetWidth; sc.classList.add("bump");
+    if (!warned && !micOff) {
+      $("bubble").textContent = earned >= FEATHERS ? "A perfect tail! Thank you!" : GIFT_LINES[Math.floor(Math.random() * GIFT_LINES.length)];
+      lastMsgAt = performance.now();
+    }
+  }
+  $("give").onclick = giveFeather;
+  document.addEventListener("keydown", e => {
+    if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey &&
+        !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) &&
+        $("setup").hidden && $("done").hidden) giveFeather();
+  });
   $("pause").onclick = () => {
     if (pausedLeft === null) { pausedLeft = Math.max(0, endTime - Date.now()); $("pause").textContent = "Resume"; $("timeSub").textContent = "paused"; }
     else { endTime = Date.now() + pausedLeft; pausedLeft = null; $("pause").textContent = "Pause"; $("timeSub").textContent = "left in class"; }
