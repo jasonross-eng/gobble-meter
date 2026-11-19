@@ -62,7 +62,7 @@ button{cursor:pointer}
 
 .stage{position:relative;min-height:0;display:flex;align-items:flex-end;justify-content:center}
 .farm{position:absolute;inset:0;width:100%;height:100%;z-index:0}
-.turkey-wrap{position:relative;height:100%;width:min(100%,900px);display:flex;align-items:flex-end;justify-content:center}
+.turkey-wrap{position:relative;height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center}
 svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visible;position:relative;z-index:1}
 .bubble{
   position:absolute;z-index:2;top:6%;left:50%;transform:translateX(-50%);
@@ -79,15 +79,44 @@ svg.turkey{height:100%;max-height:100%;width:auto;max-width:100%;overflow:visibl
 .next{height:10px;border-radius:999px;background:var(--meter-bg);margin-top:.45rem;overflow:hidden}
 .next>i{display:block;height:100%;width:0;background:var(--gold);border-radius:999px;transition:width .3s linear}
 
-.tk-body{transform-box:view-box;transform-origin:200px 330px}
-.calm .tk-body{animation:bob 2.4s ease-in-out infinite}
-.loud .tk-body{animation:shake .18s linear infinite}
+/* Turkey moods: struts cockily when calm, paces when warn, runs around angry when loud */
+svg.turkey{--gait:.9s;will-change:transform}
+svg.turkey.warn{--gait:.55s}
+svg.turkey.loud{--gait:.26s}
+.tk-all{transform-box:view-box;transform-origin:200px 335px}
+.leg{transform-box:view-box}
+.moving .tk-all{animation:strut var(--gait) ease-in-out infinite}
+.loud.moving .tk-all{animation-name:run}
+.moving .leg-l{animation:step var(--gait) ease-in-out infinite}
+.moving .leg-r{animation:step var(--gait) ease-in-out infinite calc(var(--gait) / -2)}
+.pose .tk-all{animation:puff 1.8s ease-in-out infinite}
+.tk-head{transform-box:view-box;transform-origin:200px 205px;transition:transform .25s}
+.face-r .tk-head{transform:rotate(6deg)}
+.face-l .tk-head{transform:rotate(-6deg)}
+.loud.face-r .tk-head{transform:rotate(12deg)}
+.loud.face-l .tk-head{transform:rotate(-12deg)}
+.head{transition:fill .3s}
+.loud .head{fill:#C9503F}
+.lid{opacity:0;transition:opacity .2s}
+.calm .lid{opacity:1}
 .brow{opacity:0;transition:opacity .2s}
 .warn .brow,.loud .brow{opacity:1}
-.pupil{transition:r .2s}
+.pupil{transition:r .2s,transform .2s}
+.face-r .pupil{transform:translateX(3px)}
+.face-l .pupil{transform:translateX(-3px)}
 .loud .pupil{r:2}
-@keyframes bob{50%{transform:translateY(-6px)}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-1deg)}75%{transform:translateX(5px) rotate(1deg)}}
+.wattle{transform-box:view-box;transform-origin:207px 180px}
+.loud .wattle{animation:wag .2s ease-in-out infinite alternate}
+.steam{opacity:0;transition:opacity .2s}
+.loud .steam{opacity:1}
+.steam circle{transform-box:fill-box;transform-origin:center;animation:steam .8s ease-out infinite}
+.steam circle:nth-child(2){animation-delay:-.4s}
+@keyframes strut{0%,100%{transform:rotate(-5deg)}25%,75%{transform:translateY(-9px) rotate(0)}50%{transform:rotate(5deg)}}
+@keyframes run{0%,100%{transform:rotate(-10deg)}25%,75%{transform:translateY(-24px) rotate(0)}50%{transform:rotate(10deg)}}
+@keyframes step{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-14px)}}
+@keyframes puff{0%,100%{transform:scale(1)}40%,60%{transform:translateY(-4px) scale(1.07)}}
+@keyframes wag{from{transform:rotate(-16deg)}to{transform:rotate(16deg)}}
+@keyframes steam{0%{transform:translateY(0) scale(.4);opacity:.95}100%{transform:translateY(-34px) scale(1.6);opacity:0}}
 
 .feather-inner{transform-box:view-box;transform-origin:200px 250px;transform:scale(0);opacity:0;transition:transform .7s cubic-bezier(.3,1.6,.5,1),opacity .2s}
 .feather-inner.on{transform:scale(1);opacity:1}
@@ -128,7 +157,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
   .bubble{top:2%}
 }
 @media (prefers-reduced-motion:reduce){
-  .calm .tk-body,.loud .tk-body{animation:none}
+  .tk-all,.leg,.wattle,.steam circle{animation:none!important}
   .feather-inner{transition:opacity .2s}
   .feather-inner.fall{animation:none;opacity:0}
 }
@@ -230,25 +259,34 @@ input[type=range]{accent-color:var(--gold);width:100%}
     </div>
     <div class="turkey-wrap">
       <svg class="turkey calm" id="turkey" viewBox="-40 0 480 360" role="img" aria-label="Turkey whose tail feathers grow as the class stays quiet">
+        <g class="tk-all">
         <g id="tail"></g>
         <g class="tk-body">
           <g stroke="#C9821F" stroke-width="7" stroke-linecap="round" fill="none">
-            <path d="M180 300 L176 330 M176 330 l-14 6 M176 330 l2 8 M176 330 l14 4"/>
-            <path d="M220 300 L224 330 M224 330 l14 6 M224 330 l-2 8 M224 330 l-14 4"/>
+            <g class="leg leg-l"><path d="M180 300 L176 330 M176 330 l-14 6 M176 330 l2 8 M176 330 l14 4"/></g>
+            <g class="leg leg-r"><path d="M220 300 L224 330 M224 330 l14 6 M224 330 l-2 8 M224 330 l-14 4"/></g>
           </g>
           <ellipse cx="200" cy="250" rx="80" ry="66" fill="#8A5A2E" stroke="#3B2314" stroke-width="5"/>
           <path d="M150 262 q50 34 100 0" fill="none" stroke="#6B4322" stroke-width="5" stroke-linecap="round"/>
           <path d="M160 280 q40 24 80 0" fill="none" stroke="#6B4322" stroke-width="5" stroke-linecap="round"/>
           <ellipse cx="146" cy="246" rx="22" ry="38" fill="#74481F" stroke="#3B2314" stroke-width="4" transform="rotate(18 146 246)"/>
           <ellipse cx="254" cy="246" rx="22" ry="38" fill="#74481F" stroke="#3B2314" stroke-width="4" transform="rotate(-18 254 246)"/>
-          <circle cx="200" cy="168" r="36" fill="#9E6B3C" stroke="#3B2314" stroke-width="5"/>
-          <circle cx="186" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
-          <circle cx="214" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
-          <circle class="pupil" cx="187" cy="161" r="4.5" fill="#3B2314"/>
-          <circle class="pupil" cx="213" cy="161" r="4.5" fill="#3B2314"/>
-          <path class="brow" d="M175 145 l18 6 M225 145 l-18 6" stroke="#3B2314" stroke-width="4" stroke-linecap="round"/>
-          <path d="M190 172 L210 172 L200 188 Z" fill="#E3A12F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M206 180 q10 6 6 22 q-4 8 -9 0 q-2 -10 3 -22 z" fill="#B3283F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+          <g class="tk-head">
+            <g class="steam" fill="#FFF8E6" stroke="#3B2314" stroke-width="2">
+              <circle cx="166" cy="134" r="8"/>
+              <circle cx="234" cy="134" r="8"/>
+            </g>
+            <circle class="head" cx="200" cy="168" r="36" fill="#9E6B3C" stroke="#3B2314" stroke-width="5"/>
+            <circle cx="186" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle cx="214" cy="160" r="9" fill="#fff" stroke="#3B2314" stroke-width="2.5"/>
+            <circle class="pupil" cx="187" cy="161" r="4.5" fill="#3B2314"/>
+            <circle class="pupil" cx="213" cy="161" r="4.5" fill="#3B2314"/>
+            <path class="lid" d="M176 161 a10 10 0 0 1 20 0 Z M204 161 a10 10 0 0 1 20 0 Z" fill="#9E6B3C" stroke="#3B2314" stroke-width="2.5" stroke-linejoin="round"/>
+            <path class="brow" d="M175 145 l18 6 M225 145 l-18 6" stroke="#3B2314" stroke-width="4" stroke-linecap="round"/>
+            <path d="M190 172 L210 172 L200 188 Z" fill="#E3A12F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+            <path class="wattle" d="M206 180 q10 6 6 22 q-4 8 -9 0 q-2 -10 3 -22 z" fill="#B3283F" stroke="#3B2314" stroke-width="3" stroke-linejoin="round"/>
+          </g>
+        </g>
         </g>
       </svg>
     </div>
@@ -394,6 +432,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
 
   function stopAudio(){
     running = false;
+    warned = false; setMood("calm");
     try { stream && stream.getTracks().forEach(t => t.stop()); } catch(e){}
     try { audioCtx && audioCtx.close(); } catch(e){}
   }
@@ -433,15 +472,86 @@ input[type=range]{accent-color:var(--gold);width:100%}
     updateCount();
   }
 
+  const LINES = {
+    calm: ["Nice and quiet!", "Look at these feathers.", "Strut, strut, strut.", "Best class on the farm!", "Shh… I’m fabulous."],
+    warn: ["Getting louder…", "Hey… keep it down.", "Uh oh…"],
+    loud: ["Too loud! My feathers!", "GOBBLE GOBBLE!!", "Who’s making that racket?!", "My poor feathers!"]
+  };
+  const MSG_EVERY = {calm: 6000, warn: 3500, loud: 2000};
+  let mood = "calm", lastMsgAt = 0, angryUntil = 0;
+
   let lastMood = "";
   function setMood(m){
     if (m === lastMood) return;
-    lastMood = m;
+    lastMood = m; mood = m;
     const t = $("turkey"), meter = $("meter");
     t.classList.remove("calm","warn","loud"); t.classList.add(m);
     meter.classList.remove("warn","loud"); if (m !== "calm") meter.classList.add(m);
-    if (!warned) $("bubble").textContent = m === "calm" ? "Nice and quiet!" : m === "warn" ? "Getting louder…" : "Too loud! My feathers!";
+    if (!warned) { $("bubble").textContent = LINES[m][0]; lastMsgAt = performance.now(); }
   }
+
+  // Turkey movement: struts around when calm, paces when warn, runs around angrily when loud.
+  const turkeyEl = $("turkey"), stageEl = document.querySelector(".stage"), bubbleEl = $("bubble");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let tx = 0, tv = 0, target = 0, facing = 1, pauseUntil = 0, retargetAt = 0, motionLast = performance.now();
+
+  function pickTarget(range){
+    if (range < 20) return 0;
+    let n = 0;
+    for (let i = 0; i < 8; i++) { n = (Math.random() * 2 - 1) * range; if (Math.abs(n - tx) > range * 0.35) break; }
+    return n;
+  }
+
+  function motion(now){
+    const dt = Math.min(0.1, (now - motionLast) / 1000); motionLast = now;
+    const W = stageEl.clientWidth;
+    const range = Math.max(0, W / 2 - turkeyEl.getBoundingClientRect().width * 0.42 - 12);
+    let moving = false;
+    if (reduceMotion.matches) {
+      tx = 0; tv = 0;
+    } else {
+      const speed = W * (mood === "loud" ? 0.55 : mood === "warn" ? 0.14 : 0.07);
+      if (Math.abs(target) > range) target = Math.sign(target) * range;
+      let desired = 0;
+      if (!(mood === "calm" && now < pauseUntil)) {
+        const arrived = Math.abs(target - tx) < Math.max(6, speed * 0.08);
+        if (arrived) {
+          if (mood === "calm") pauseUntil = now + 1200 + Math.random() * 2200;
+          target = pickTarget(range);
+          retargetAt = now + 300 + Math.random() * 600;
+        } else if (mood === "loud" && now > retargetAt) {
+          target = pickTarget(range);
+          retargetAt = now + 300 + Math.random() * 600;
+        }
+        if (!(mood === "calm" && now < pauseUntil)) desired = Math.sign(target - tx) * speed;
+      }
+      tv += (desired - tv) * Math.min(1, dt * (mood === "loud" ? 10 : 5));
+      tx += tv * dt;
+      if (tx > range) { tx = range; tv = Math.min(0, tv); }
+      if (tx < -range) { tx = -range; tv = Math.max(0, tv); }
+      if (Math.abs(tv) > 4) facing = tv > 0 ? 1 : -1;
+      moving = Math.abs(tv) > W * 0.01 || mood === "loud";
+    }
+    turkeyEl.classList.toggle("moving", moving);
+    turkeyEl.classList.toggle("pose", !moving && mood === "calm" && !reduceMotion.matches);
+    turkeyEl.classList.toggle("face-r", facing > 0);
+    turkeyEl.classList.toggle("face-l", facing < 0);
+    turkeyEl.style.transform = `translateX(${tx.toFixed(1)}px)`;
+
+    const bLim = Math.max(0, W / 2 - bubbleEl.offsetWidth / 2 - 8);
+    const bx = Math.max(-bLim, Math.min(bLim, tx));
+    bubbleEl.style.left = `calc(50% + ${bx.toFixed(1)}px)`;
+
+    if (!warned && now - lastMsgAt > MSG_EVERY[mood]) {
+      const list = LINES[mood];
+      let next = list[Math.floor(Math.random() * list.length)];
+      if (next === bubbleEl.textContent) next = list[(list.indexOf(next) + 1) % list.length];
+      bubbleEl.textContent = next;
+      lastMsgAt = now;
+    }
+    requestAnimationFrame(motion);
+  }
+  requestAnimationFrame(motion);
 
   function loop(now){
     if (!running) return;
@@ -460,7 +570,8 @@ input[type=range]{accent-color:var(--gold);width:100%}
     $("meter").setAttribute("aria-valuenow", Math.round(lv));
 
     const loud = lv > limit, warn = lv > limit * 0.78;
-    setMood(loud ? "loud" : warn ? "warn" : "calm");
+    if (loud) angryUntil = now + 1500;
+    setMood(loud || now < angryUntil ? "loud" : warn ? "warn" : "calm");
 
     const left = pausedLeft !== null ? pausedLeft : endTime - Date.now();
     $("time").textContent = fmt(left);
