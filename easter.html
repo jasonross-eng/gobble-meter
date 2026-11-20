@@ -1093,7 +1093,7 @@ input[type=range]{accent-color:var(--gold);width:100%}
       } else if (loud || (deaf && mood === "loud")) {
         // Every 2 seconds of too-loud loses one. The character's own sound counts as loud time.
         loudMs += dt;
-        if (loudMs >= 2000) { lose(); lastLoss = Date.now(); loudMs = 0; }
+        if (loudMs >= 2000) { takeFeather(); lastLoss = Date.now(); loudMs = 0; }
       } else {
         // Brief quiet moments only slowly wind the too-loud timer back down.
         loudMs = Math.max(0, loudMs - dt / 2);
