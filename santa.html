@@ -1071,13 +1071,13 @@ input[type=range]{accent-color:var(--gold);width:100%}
     if (pausedLeft === null) {
       if (micOff) {
         // Mic paused: the clock keeps running, but feathers are frozen.
-      } else if (loud) {
+      } else if (loud || (deaf && mood === "loud")) {
+        // Every 3 seconds of too-loud loses one. The character's own sound counts as loud time.
         loudMs += dt;
-        if (loudMs > 1200 && Date.now() - lastLoss > 4000) {
-          lose(); lastLoss = Date.now(); loudMs = 0;
-        }
+        if (loudMs >= 3000) { lose(); lastLoss = Date.now(); loudMs = 0; }
       } else {
-        loudMs = Math.max(0, loudMs - dt);
+        // Brief quiet moments only slowly wind the too-loud timer back down.
+        loudMs = Math.max(0, loudMs - dt / 2);
         if (earned < FEATHERS) {
           quietMs += dt;
           if (quietMs >= interval) { quietMs = 0; gain(); }
